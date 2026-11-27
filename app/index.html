@@ -27,7 +27,7 @@ input,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {getAuth,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import {getFirestore,doc,getDoc,setDoc,collection,getDocs,updateDoc,writeBatch,serverTimestamp,query,where} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import {getFirestore,doc,getDoc,setDoc,collection,getDocs,updateDoc,deleteDoc,writeBatch,serverTimestamp,query,where} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 const cfg={apiKey:"AIzaSyBbXwXd4lZh4iRUH2UGYWVpunrGOEt89JA",authDomain:"yaxis-tuition-ac94f.firebaseapp.com",projectId:"yaxis-tuition-ac94f",storageBucket:"yaxis-tuition-ac94f.firebasestorage.app",messagingSenderId:"1005729199924",appId:"1:1005729199924:web:16a9ea9403fa30fe649761"};
 const app=initializeApp(cfg),auth=getAuth(app),fs=getFirestore(app);
@@ -119,7 +119,7 @@ async function loadAtt(date){
  const s=await getDocs(query(collection(fs,'att'),where('date','==',date)));ATT={};s.forEach(d=>{const x=d.data();ATT[x.sid]=x});
 }
 function nav(){
- const tabs=ME.role==='parent'?[['home',T('Home','முகப்பு')]]:[['home',T('Home','முகப்பு')],['stu',T('Students','மாணவர்கள்')],['att',T('Attendance','வருகை')],['ex',T('Exams','தேர்வுகள்')]];
+ const tabs=ME.role==='parent'?[['home',T('Home','முகப்பு')]]:[['home',T('Home','முகப்பு')],['stu',T('Students','மாணவர்கள்')],['att',T('Attendance','வருகை')],['ex',T('Exams','தேர்வுகள்')],['sa',ME.role==='owner'?T('Staff','ஆசிரியர் வருகை'):T('My attendance','என் வருகை')]];
  if(ME.role==='owner')tabs.push(['acc',T('Accounts','கணக்குகள்')]);
  return `<div class="tabs">${tabs.map(([k,l])=>`<button class="${k===TAB?'on':''}" onclick="window.YX.tab('${k}')">${l}</button>`).join('')}</div>`;
 }
@@ -373,6 +373,58 @@ async function pubEx(){
 }
 const exHtml=s=>{const r=MKP.filter(x=>x.sid===s.id).sort((a,b)=>a.date<b.date?1:-1);
  return `<h2 style="margin-top:12px">${T('Exam results','தேர்வு முடிவுகள்')}</h2>${r.map(x=>`<div class="row"><b>${esc(x.exam)}<br><span class="mut">${esc(x.subject)} · ${fmtD(x.date)}</span></b><span class="tag ok">${x.ab?T('Absent','வரவில்லை'):x.m+' / '+x.max}</span></div>`).join('')||`<p class="mut">${T('No results yet.','முடிவுகள் இல்லை.')}</p>`}`};
+let CEN=null,HOL=[];
+const getPos=()=>new Promise((res,rej)=>{if(!navigator.geolocation)return rej({code:'nogeo'});navigator.geolocation.getCurrentPosition(p=>res(p.coords),e=>rej(e),{enableHighAccuracy:true,timeout:20000,maximumAge:0})});
+const dist=(a,b,c,d)=>{const r=x=>x*Math.PI/180,R=6371000,dl=r(c-a),dn=r(d-b);const h=Math.sin(dl/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h))};
+async function loadCen(){try{const d=await getDoc(doc(fs,'meta','centre'));CEN=d.exists()?d.data():null}catch(e){CEN=null}}
+async function loadHol(){try{const q=await getDocs(collection(fs,'holidays'));HOL=[];q.forEach(d=>HOL.push(d.data()));HOL.sort((a,b)=>a.date<b.date?-1:1)}catch(e){HOL=[]}}
+const geoErr=e=>e&&e.code===1?T('Location permission is off. Allow location for this site and try again.','இருப்பிட அனுமதி மூடப்பட்டுள்ளது. இந்த தளத்திற்கு இருப்பிடத்தை அனுமதித்து மீண்டும் முயற்சிக்கவும்.'):T('Could not get your location. Try again outdoors.','இருப்பிடத்தைப் பெற முடியவில்லை. மீண்டும் முயற்சிக்கவும்.');
+V.sa=async()=>{
+ await loadCen();await loadHol();const uid=auth.currentUser.uid,mon=today().slice(0,7);
+ const hol=HOL.find(x=>x.date===today());
+ let h=hol?`<div class="card" style="border:2px solid var(--acc)"><b>${T('Holiday today','இன்று விடுமுறை')}: ${esc(hol.name)}</b></div>`:'';
+ if(ME.role==='owner'){
+  const q=await getDocs(query(collection(fs,'satt'),where('date','>=',mon+'-01'),where('date','<=',mon+'-31')));const rec=[];q.forEach(d=>rec.push(d.data()));
+  const td=rec.filter(x=>x.date===today());const by={};rec.forEach(x=>{by[x.uid]=by[x.uid]||{name:x.name,n:0};by[x.uid].n++});
+  h+=`<div class="card"><h2>${T('Centre location','மைய இருப்பிடம்')}</h2><p class="mut">${CEN?T('Set','அமைக்கப்பட்டது')+' · '+T('radius','சுற்றளவு')+' '+CEN.radius+' m':T('Not set. Teachers can check in from anywhere until you set it.','அமைக்கப்படவில்லை. அமைக்கும் வரை ஆசிரியர் எங்கிருந்தும் வருகை குறிக்கலாம்.')}</p>
+  <label>${T('Allowed radius (metres)','அனுமதிக்கப்பட்ட சுற்றளவு (மீ)')}</label><input id="rad" inputmode="numeric" maxlength="4" value="${CEN?CEN.radius:150}"><div id="m2"></div>
+  <button class="btn" onclick="window.YX.setCen()">${T('Set centre to my current location','என் தற்போதைய இடத்தை மையமாக அமை')}</button></div>
+  <div class="card"><h2>${T('Teachers today','இன்று ஆசிரியர்கள்')} · ${fmtD(today())}</h2>${td.map(x=>`<div class="row"><b>${esc(x.name)}</b><span class="tag ok">${x.in||''}${x.out?' → '+x.out:''}</span></div>`).join('')||`<p class="mut">${T('Nobody has checked in yet.','இன்னும் யாரும் வருகை குறிக்கவில்லை.')}</p>`}</div>
+  <div class="card"><h2>${T('This month','இந்த மாதம்')}</h2>${Object.values(by).map(x=>`<div class="row"><b>${esc(x.name)}</b><span class="tag">${x.n} ${T('days','நாட்கள்')}</span></div>`).join('')||`<p class="mut">-</p>`}</div>
+  <div class="card"><h2>${T('Holidays','விடுமுறை நாட்கள்')}</h2><label>${T('Date','தேதி')}</label><input id="hd" type="date" value="${today()}"><label>${T('Reason','காரணம்')}</label><input id="hn"><div id="m3"></div>
+  <button class="btn" onclick="window.YX.addHol()">${T('Add holiday','விடுமுறை சேர்')}</button>
+  ${HOL.map(x=>`<div class="row"><b>${fmtD(x.date)} · ${esc(x.name)}</b><button class="btn sm gr" onclick="window.YX.delHol('${x.date}')">${T('Remove','நீக்கு')}</button></div>`).join('')}</div>`;
+ }else{
+  const q=await getDocs(query(collection(fs,'satt'),where('uid','==',uid)));const rec=[];q.forEach(d=>rec.push(d.data()));rec.sort((a,b)=>a.date<b.date?1:-1);
+  const me=rec.find(x=>x.date===today());
+  h+=`<div class="card"><h2>${T('My attendance','என் வருகை')} · ${fmtD(today())}</h2><p>${me?`<span class="tag ok">${T('In','வருகை')} ${me.in||''}${me.out?' → '+T('Out','வெளியே')+' '+me.out:''}</span>`:`<span class="tag">${T('Not checked in','வருகை குறிக்கவில்லை')}</span>`}</p><div id="m2"></div>
+  ${!me?`<button class="btn" onclick="window.YX.saIn()">${T('Check-in (uses your location)','வருகை குறி (இருப்பிடம் பயன்படுத்தப்படும்)')}</button>`:!me.out?`<button class="btn gr" onclick="window.YX.saOut()">${T('Check-out','வெளியே குறி')}</button>`:''}</div>
+  <div class="card"><h2>${T('My records','என் பதிவுகள்')}</h2>${rec.slice(0,31).map(x=>`<div class="row"><b>${fmtD(x.date)}</b><span class="tag ok">${x.in||''}${x.out?' → '+x.out:''}</span></div>`).join('')||`<p class="mut">-</p>`}</div>`;
+ }
+ $('v').innerHTML=h;
+};
+async function setCen(){
+ const rad=Number($('rad').value);if(!(rad>=30&&rad<=2000))return m2(T('Radius must be 30 to 2000 metres.','சுற்றளவு 30 முதல் 2000 மீ வரை இருக்க வேண்டும்.'));
+ try{const p=await getPos();await setDoc(doc(fs,'meta','centre'),{lat:p.latitude,lng:p.longitude,radius:rad,at:serverTimestamp()});await V.sa();m2(T('Centre saved.','மையம் சேமிக்கப்பட்டது.'),true)}catch(e){m2(e&&e.code!==undefined&&typeof e.code==='number'||(e&&e.code==='nogeo')?geoErr(e):errText(e))}
+}
+async function saIn(){
+ try{
+  const uid=auth.currentUser.uid;let p=null,d=null;
+  if(CEN){p=await getPos();d=Math.round(dist(CEN.lat,CEN.lng,p.latitude,p.longitude));if(d>CEN.radius)return m2(T('You are ','நீங்கள் ')+d+T(' m away from the centre. Check-in is allowed within ',' மீ தொலைவில் உள்ளீர்கள். அனுமதி: ')+CEN.radius+' m.')}
+  await setDoc(doc(fs,'satt',today()+'_'+uid),{uid,name:ME.name,date:today(),in:nowHM(),out:null,lat:p?p.latitude:null,lng:p?p.longitude:null,dist:d});
+  await V.sa();m2(T('Check-in saved.','வருகை பதிவானது.'),true);
+ }catch(e){m2(e&&(typeof e.code==='number'||e.code==='nogeo')?geoErr(e):errText(e))}
+}
+async function saOut(){
+ try{const uid=auth.currentUser.uid,id=today()+'_'+uid,s=await getDoc(doc(fs,'satt',id));if(!s.exists())return;
+  await setDoc(doc(fs,'satt',id),{...s.data(),out:nowHM()});await V.sa();m2(T('Check-out saved.','வெளியேறுதல் பதிவானது.'),true)}catch(e){m2(errText(e))}
+}
+async function addHol(){
+ const date=$('hd').value,name=$('hn').value.trim();
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!name){$('m3').innerHTML=`<div class="msg err">${T('Enter date and reason.','தேதி மற்றும் காரணத்தை உள்ளிடவும்.')}</div>`;return}
+ try{await setDoc(doc(fs,'holidays',date),{date,name});await V.sa()}catch(e){$('m3').innerHTML=`<div class="msg err">${esc(errText(e))}</div>`}
+}
+async function delHol(d){try{await deleteDoc(doc(fs,'holidays',d));await V.sa()}catch(e){alert(errText(e))}}
 async function route(){
  const u=auth.currentUser;
  if(!u){TAB='home';CLS='';STU=[];ATT={};EXID='';return viewLogin()}
@@ -381,6 +433,6 @@ async function route(){
  if(ME.role==='parent'||(TAB==='acc'&&ME.role!=='owner'))TAB='home';
  viewHome();
 }
-window.YX={lang:()=>setLang(L==='ta'?'en':'ta'),setup:viewSetup,route,toggle,reset,tab:k=>{TAB=k;if(k==='ex')EXID='';viewHome()},cls:c=>{CLS=c;V.att()},mark,outAll,stuOff,pinFor,copyMsg,addEx,exOpen,exBack,saveMk,pubEx};
+window.YX={lang:()=>setLang(L==='ta'?'en':'ta'),setup:viewSetup,route,toggle,reset,tab:k=>{TAB=k;if(k==='ex')EXID='';viewHome()},cls:c=>{CLS=c;V.att()},mark,outAll,stuOff,pinFor,copyMsg,setCen,saIn,saOut,addHol,delHol,addEx,exOpen,exBack,saveMk,pubEx};
 onAuthStateChanged(auth,async u=>{if(busy)return;ME=null;route()});
 </script></body></html>
