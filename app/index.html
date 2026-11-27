@@ -4,26 +4,76 @@
 <meta name="theme-color" content="#12306B">
 <title>Y Axis Tuition – App</title>
 <style>
-:root{--bg:#f3f5fa;--card:#fff;--ink:#16223b;--mut:#6a748a;--pri:#12306B;--acc:#f2a900;--ok:#1B8F1E;--bad:#d64545;--line:#e1e6f0}
-*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Noto Sans Tamil",sans-serif;background:var(--bg);color:var(--ink)}
-.wrap{max-width:460px;margin:0 auto;padding:18px 16px 40px}
-.card{background:var(--card);border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 1px 3px rgba(20,35,70,.1)}
-h1{font-size:20px;margin:6px 0;color:var(--pri)}h2{font-size:16px;margin:0 0 8px;color:var(--pri)}
-label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
-input,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:16px;font-family:inherit}
-.btn{background:var(--pri);color:#fff;border:0;border-radius:10px;padding:12px 16px;font-size:15px;cursor:pointer;width:100%;margin-top:14px;font-family:inherit}
-.btn.sm{width:auto;padding:7px 12px;font-size:13px;margin:0}.btn.gr{background:#e8ecf5;color:var(--pri)}.btn.bad{background:var(--bad)}
+:root{--bg:#f2f6fb;--card:#fff;--ink:#13213f;--mut:#667394;--pri:#12306b;--pri2:#1d4a9a;--grn:#1b8f1e;--grn2:#27ae2b;--acc:#f2a900;--ok:#1B8F1E;--bad:#d64545;--line:#e4eaf4}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#eef3fa,#f7f9fd);color:var(--ink);font-family:"Inter","Noto Sans Tamil",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:15px;overflow-x:hidden}
+#app{max-width:520px;margin:0 auto;min-height:100vh;position:relative}
+header{position:sticky;top:0;z-index:5;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);color:var(--pri);display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);box-shadow:0 2px 12px rgba(18,48,107,.06)}
+header .hl{height:40px;width:auto;display:block;flex:none}
+header .ttl{flex:1;font-weight:700;font-size:16px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--pri)}
+header button{background:#eef3fb;color:var(--pri);border:0;border-radius:12px;padding:8px 11px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;width:auto;margin:0}
+main{padding:16px 14px 100px}
+h1{font-size:20px;margin:6px 0;color:var(--pri)}
+h2{font-size:18px;margin:0 0 10px;color:var(--pri);letter-spacing:-.2px}
+.card{background:var(--card);border-radius:18px;padding:15px;margin:0 0 12px;box-shadow:0 4px 18px rgba(18,48,107,.07);border:1px solid #edf1f8}
+label{display:block;font-size:12px;color:var(--mut);margin:10px 0 4px}
+input,select,textarea{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;font-size:16px;font-family:inherit;background:#fff;color:var(--ink)}
+.btn{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border:0;border-radius:12px;padding:12px 15px;font-size:15px;font-weight:600;cursor:pointer;width:100%;margin-top:12px;font-family:inherit;box-shadow:0 3px 8px rgba(18,48,107,.18)}
+.btn.sm{width:auto;padding:7px 12px;font-size:13px;margin:0}
+.btn.gr{background:#eaf0fa;color:var(--pri);box-shadow:none}
+.btn.bad{background:linear-gradient(135deg,#c93636,#e05252)}
+.btn.acc{background:linear-gradient(135deg,var(--grn),var(--grn2));box-shadow:0 3px 8px rgba(27,143,30,.25)}
+.btn[disabled]{opacity:.45}
 .logo{display:block;margin:6px auto 0;width:84px;height:auto}.c{text-align:center}
 .msg{margin:10px 0;padding:10px;border-radius:10px;font-size:14px}.err{background:#fdecec;color:#9b1c1c}.okm{background:#e7f6e8;color:#14611a}
-.row{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--line);font-size:14px}.row:first-child{border-top:0}.row b{flex:1}
-.tag{font-size:11px;padding:2px 8px;border-radius:99px;background:#e8ecf5;color:var(--pri)}.tag.off{background:#fdecec;color:#9b1c1c}
-.mut{color:var(--mut);font-size:13px}.lang{float:right;font-size:13px;color:var(--pri);background:none;border:0;cursor:pointer}
-.pin{font-size:26px;letter-spacing:4px;font-weight:700;color:var(--pri);text-align:center;padding:8px}
-.tabs{display:flex;gap:6px;margin:10px 0;overflow-x:auto}.tabs button{flex:1;white-space:nowrap;border:0;background:#e3e8f3;color:var(--pri);padding:9px 10px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}.tabs button.on{background:var(--pri);color:#fff}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center}.stats b{display:block;font-size:20px;color:var(--pri)}.stats span{font-size:11px;color:var(--mut)}
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}.chips button{border:0;background:#e8ecf5;color:var(--pri);padding:6px 10px;border-radius:99px;font-size:13px;cursor:pointer}.chips button.on{background:var(--pri);color:#fff}
-.arow{padding:10px 0;border-top:1px solid var(--line)}.arow:first-of-type{border-top:0}.ab{display:flex;gap:6px;margin-top:6px}.tag.ok{background:#e7f6e8;color:#14611a}
-</style></head><body><div class="wrap" id="app"><p class="c mut">…</p></div>
+.row{display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--line);font-size:14px}.row:first-child{border-top:0}.row b{flex:1}
+.tag{font-size:12px;padding:2px 9px;border-radius:99px;background:#e8ecf5;color:var(--pri);font-weight:600}.tag.off{background:#fde3e3;color:#9b2222}.tag.ok{background:#dff5e8;color:#136b3a}
+.mut{color:var(--mut);font-size:13px}
+.pin{font-size:28px;letter-spacing:5px;font-weight:700;color:var(--pri);text-align:center;padding:8px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center}.stats div{background:#f3f6fc;border-radius:12px;padding:10px 4px}.stats b{display:block;font-size:21px;color:var(--pri)}.stats span{font-size:11px;color:var(--mut)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}.chips button{border:0;background:#e6edf8;color:var(--pri);padding:7px 11px;border-radius:99px;font-size:13px;cursor:pointer;font-family:inherit;width:auto;margin:0;box-shadow:none}.chips button.on{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff}
+.arow{padding:10px 0;border-top:1px solid var(--line)}.arow:first-of-type{border-top:0}.ab{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;align-items:center}
+.greet{background:linear-gradient(135deg,var(--pri) 0%,var(--pri2) 55%,var(--grn) 130%);color:#fff;border-radius:22px;padding:18px;margin-bottom:14px;box-shadow:0 10px 26px rgba(18,48,107,.25);position:relative;overflow:hidden}
+.greet:after{content:"";position:absolute;right:-30px;top:-30px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.09)}
+.greet b{font-size:19px;display:block}.greet span{opacity:.85;font-size:13px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{background:#fff;border:1px solid #edf1f8;border-radius:22px;padding:20px 10px;text-align:center;font-size:15px;font-weight:700;color:var(--pri);box-shadow:0 6px 18px rgba(18,48,107,.08);cursor:pointer;font-family:inherit;width:auto;margin:0}
+.tile .ic{width:58px;height:58px;border-radius:18px;background:linear-gradient(135deg,#e7f0ff,#e3f6e4);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:28px}
+.shell{display:block}.side{display:none}.content{min-width:0}
+.bnav{position:fixed;left:0;right:0;bottom:0;z-index:9;display:flex;justify-content:center;background:rgba(255,255,255,.96);border-top:1px solid var(--line);box-shadow:0 -4px 18px rgba(18,48,107,.08);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+.bnav>div{display:flex;width:100%;max-width:520px}
+.bnav button{flex:1;background:none;border:0;font-family:inherit;color:var(--mut);font-size:10px;padding:5px 0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;width:auto;margin:0;box-shadow:none}
+.bnav button i{font-style:normal;font-size:20px}
+.bnav button.on{color:var(--pri);font-weight:700}
+.bnav button.on i{background:linear-gradient(135deg,#e1ecff,#ddf4de);border-radius:12px;padding:0 14px}
+.loginwrap{display:block}
+.hero{background:linear-gradient(150deg,var(--pri) 0%,var(--pri2) 60%,var(--grn) 140%);color:#fff;padding:26px 20px 64px;text-align:center;position:relative;overflow:hidden;border-radius:0 0 34px 34px}
+.hero:before,.hero:after{content:"";position:absolute;border-radius:50%;background:rgba(255,255,255,.07)}
+.hero:before{width:240px;height:240px;left:-80px;top:-90px}.hero:after{width:200px;height:200px;right:-70px;bottom:-60px}
+.hero .lc{background:#fff;display:inline-block;border-radius:22px;padding:12px 20px;box-shadow:0 12px 30px rgba(0,0,0,.25);position:relative;z-index:1}
+.hero .lc img{height:84px;display:block}
+.hero h1{font-size:24px;margin:16px 0 4px;color:#fff;position:relative;z-index:1}
+.hero p{margin:0;opacity:.9;font-size:14px;position:relative;z-index:1}
+.hero .lg{position:absolute;right:14px;top:12px;z-index:2;background:rgba(255,255,255,.2);color:#fff;border:0;border-radius:12px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;width:auto;margin:0;box-shadow:none}
+.lform{padding:0 14px}.lform>.card:first-child{margin-top:-40px;position:relative;z-index:2}
+.addr{color:var(--mut);font-size:12px;text-align:center;padding:14px 20px}
+@media(min-width:900px){
+ #app{max-width:1320px}
+ .shell{display:flex;min-height:100vh}
+ .side{display:block;width:220px;flex:none;background:linear-gradient(180deg,var(--pri),#0b2150);padding:14px 10px;position:sticky;top:0;align-self:flex-start;height:100vh}
+ .side .logo2{background:#fff;border-radius:14px;padding:8px;margin:2px 4px 18px}.side .logo2 img{width:100%;display:block}
+ .side button{display:block;width:100%;text-align:left;background:none;border:0;color:#fff;padding:12px;margin:0 0 4px;border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit;box-shadow:none}
+ .side button.on{background:rgba(255,255,255,.2);font-weight:700}.side button:hover{background:rgba(255,255,255,.12)}
+ .content{flex:1}
+ .bnav{display:none}header .hl{display:none}
+ main{padding:22px 30px 40px}
+ .tiles{grid-template-columns:repeat(3,1fr)}
+ .loginwrap{display:grid;grid-template-columns:1.05fr 1fr;min-height:100vh;align-items:center}
+ .hero{border-radius:0 40px 40px 0;min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:40px}
+ .lform{max-width:460px;width:100%;margin:0 auto}.lform>.card:first-child{margin-top:0}
+ .addr{grid-column:1/-1}
+}
+</style></head><body><div id="app"><p class="c mut">…</p></div>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {getAuth,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
@@ -41,7 +91,7 @@ const pass=p=>'yx'+p+'#';
 const okPhone=p=>/^[6-9]\d{9}$/.test(p),okPin=p=>/^\d{4,6}$/.test(p);
 let ME=null,busy=false;
 function setLang(l){L=l;try{localStorage.setItem('yx_lang',l)}catch(e){}route()}
-function shell(inner){return `<button class="lang" onclick="window.YX.lang()">${L==='ta'?'English':'தமிழ்'}</button><img class="logo" alt="Y Axis" src="/assets/images/logo.png"><h1 class="c">Y Axis Tuition</h1>${inner}`}
+function shell(inner){return `<div class="loginwrap"><div class="hero"><button class="lg" onclick="window.YX.lang()">${L==='ta'?'English':'தமிழ்'}</button><div><span class="lc"><img alt="Y Axis Tuition" src="/assets/images/logo.png"></span></div><h1>Y Axis Tuition Centre</h1><p>${T('Where every child gets a chance to shine','ஒவ்வொரு குழந்தைக்கும் ஒளிர ஒரு வாய்ப்பு')}</p></div><div class="lform">${inner}</div><div class="addr">Melur, Madurai · +91 78455 92859 · www.yaxistuition.com</div></div>`}
 function msg(t,ok){const e=$('m');if(e)e.innerHTML=t?`<div class="msg ${ok?'okm':'err'}">${esc(t)}</div>`:''}
 function errText(e){const c=(e&&e.code)||'';
  if(c.includes('invalid-credential')||c.includes('wrong-password')||c.includes('user-not-found'))return T('Wrong mobile number or PIN.','மொபைல் எண் அல்லது PIN தவறு.');
@@ -118,14 +168,22 @@ async function loadStu(){
 async function loadAtt(date){
  const s=await getDocs(query(collection(fs,'att'),where('date','==',date)));ATT={};s.forEach(d=>{const x=d.data();ATT[x.sid]=x});
 }
-function nav(){
- const tabs=ME.role==='parent'?[['home',T('Home','முகப்பு')]]:[['home',T('Home','முகப்பு')],['stu',T('Students','மாணவர்கள்')],['att',T('Attendance','வருகை')],['ex',T('Exams','தேர்வுகள்')],['sa',ME.role==='owner'?T('Staff','ஆசிரியர் வருகை'):T('My attendance','என் வருகை')]];
- if(ME.role==='owner')tabs.push(['fee',T('Fees','கட்டணம்')],['nt',T('Notices','அறிவிப்புகள்')],['acc',T('Accounts','கணக்குகள்')]);
- return `<div class="tabs">${tabs.map(([k,l])=>`<button class="${k===TAB?'on':''}" onclick="window.YX.tab('${k}')">${l}</button>`).join('')}</div>`;
+function navItems(){
+ const t=[['home','🏠',T('Home','முகப்பு')]];
+ if(ME.role==='parent')return t;
+ t.push(['stu','🎓',T('Students','மாணவர்கள்')],['att','🗓️',T('Attendance','வருகை')],['ex','📝',T('Exams','தேர்வுகள்')],['sa','🕘',ME.role==='owner'?T('Staff','ஆசிரியர் வருகை'):T('My attendance','என் வருகை')]);
+ if(ME.role==='owner')t.push(['fee','💰',T('Fees','கட்டணம்')],['nt','📢',T('Notices','அறிவிப்புகள்')],['acc','🔑',T('Accounts','கணக்குகள்')]);
+ return t;
 }
+const mainKeys=()=>ME.role==='owner'?['home','stu','att','fee']:navItems().map(x=>x[0]);
+function side(){const it=navItems();if(it.length<2)return '';return `<nav class="side"><div class="logo2"><img src="/assets/images/logo.png" alt="Y Axis Tuition"></div>${it.map(x=>`<button class="${x[0]===TAB?'on':''}" onclick="window.YX.tab('${x[0]}')">${x[1]} ${x[2]}</button>`).join('')}</nav>`}
+function bnav(){const it=navItems();if(it.length<2)return '';const mk=mainKeys(),main=it.filter(x=>mk.includes(x[0])),more=it.length>main.length,act=main.some(x=>x[0]===TAB)?TAB:'more';
+ return `<div class="bnav"><div>${main.map(x=>`<button class="${act===x[0]?'on':''}" onclick="window.YX.tab('${x[0]}')"><i>${x[1]}</i>${x[2]}</button>`).join('')}${more?`<button class="${act==='more'?'on':''}" onclick="window.YX.tab('more')"><i>☰</i>${T('More','மேலும்')}</button>`:''}</div></div>`}
 const V={};
+V.more=async()=>{const mk=mainKeys();$('v').innerHTML=`<div class="tiles">${navItems().filter(x=>!mk.includes(x[0])).map(x=>`<button class="tile" onclick="window.YX.tab('${x[0]}')"><div class="ic">${x[1]}</div>${x[2]}</button>`).join('')}</div>`};
 async function viewHome(){
- $('app').innerHTML=shell(nav()+`<div id="v"><p class="mut c">…</p></div><button class="btn gr" id="so">${T('Sign out','வெளியேறு')}</button>`);
+ const it=navItems(),cur=it.find(x=>x[0]===TAB);
+ $('app').innerHTML=`<div class="shell">${side()}<div class="content"><header><img class="hl" src="/assets/images/logo.png" alt="Y Axis"><div class="ttl">${cur?cur[2]:(TAB==='more'?T('More','மேலும்'):'Y Axis Tuition')}</div><button onclick="window.YX.lang()">${L==='ta'?'EN':'தமிழ்'}</button><button id="so" title="${T('Sign out','வெளியேறு')}">⎋ ${T('Sign out','வெளியேறு')}</button></header><main><div id="v"><p class="mut c">…</p></div></main></div></div>${bnav()}`;
  $('so').onclick=()=>signOut(auth);
  try{await V[TAB]()}catch(e){$('v').innerHTML=`<div class="msg err">${esc(errText(e))}</div>`}
 }
@@ -133,7 +191,7 @@ const roleName=r=>r==='owner'?T('Owner','உரிமையாளர்'):r==='t
 const stTag=a=>!a?`<span class="tag">${T('Not marked','குறிக்கவில்லை')}</span>`:a.st==='A'?`<span class="tag off">${T('Absent','வரவில்லை')}</span>`:`<span class="tag ok">${T('Present','வந்தார்')}${a.in?' '+a.in:''}${a.out?' → '+a.out:''}</span>`;
 const fmtD=d=>{const [y,m,dd]=d.split('-');return dd+'-'+m+'-'+y};
 V.home=async()=>{
- let h=`<div class="card"><h2>${T('Welcome','வணக்கம்')}, ${esc(ME.name||'')}</h2><p class="mut">${esc(ME.phone)} · <span class="tag">${roleName(ME.role)}</span></p></div>`;
+ let h=`<div class="greet"><b>${T('Welcome','வணக்கம்')}, ${esc(ME.name||'')} 👋</b><span>${roleName(ME.role)} · ${esc(ME.phone)} · ${fmtD(today())}</span></div>`;
  await loadStu();
  h+=await ntCard();
  if(ME.role==='owner'){h+=await reqCard();h+=await exCard()}
@@ -479,7 +537,7 @@ async function route(){
  if(!u){TAB='home';CLS='';STU=[];ATT={};EXID='';return viewLogin()}
  if(!ME){ME=await loadMe(u)}
  if(!ME||ME.active!==true){const bad=ME;await signOut(auth);ME=null;await viewLogin();msg(bad?T('This account is switched off. Contact the owner.','இந்த கணக்கு நிறுத்தப்பட்டுள்ளது. உரிமையாளரைத் தொடர்புகொள்ளவும்.'):T('Account not found.','கணக்கு கிடைக்கவில்லை.'));return}
- if(ME.role==='parent'||(TAB==='acc'&&ME.role!=='owner'))TAB='home';
+ if(!navItems().some(x=>x[0]===TAB)&&TAB!=='more')TAB='home';if(ME.role==='parent')TAB='home';
  viewHome();
 }
 window.YX={lang:()=>setLang(L==='ta'?'en':'ta'),setup:viewSetup,route,toggle,reset,tab:k=>{TAB=k;if(k==='ex')EXID='';viewHome()},cls:c=>{CLS=c;V.att()},mark,outAll,stuOff,pinFor,copyMsg,monCh,setFee,recPay,delPay,setUpi,addNt,delNt,setCen,saIn,saOut,addHol,delHol,addEx,exOpen,exBack,saveMk,pubEx};
