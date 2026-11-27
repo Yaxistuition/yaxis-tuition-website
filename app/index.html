@@ -119,7 +119,7 @@ async function loadAtt(date){
  const s=await getDocs(query(collection(fs,'att'),where('date','==',date)));ATT={};s.forEach(d=>{const x=d.data();ATT[x.sid]=x});
 }
 function nav(){
- const tabs=ME.role==='parent'?[['home',T('Home','முகப்பு')]]:[['home',T('Home','முகப்பு')],['stu',T('Students','மாணவர்கள்')],['att',T('Attendance','வருகை')]];
+ const tabs=ME.role==='parent'?[['home',T('Home','முகப்பு')]]:[['home',T('Home','முகப்பு')],['stu',T('Students','மாணவர்கள்')],['att',T('Attendance','வருகை')],['ex',T('Exams','தேர்வுகள்')]];
  if(ME.role==='owner')tabs.push(['acc',T('Accounts','கணக்குகள்')]);
  return `<div class="tabs">${tabs.map(([k,l])=>`<button class="${k===TAB?'on':''}" onclick="window.YX.tab('${k}')">${l}</button>`).join('')}</div>`;
 }
@@ -135,7 +135,7 @@ const fmtD=d=>{const [y,m,dd]=d.split('-');return dd+'-'+m+'-'+y};
 V.home=async()=>{
  let h=`<div class="card"><h2>${T('Welcome','வணக்கம்')}, ${esc(ME.name||'')}</h2><p class="mut">${esc(ME.phone)} · <span class="tag">${roleName(ME.role)}</span></p></div>`;
  await loadStu();
- if(ME.role==='owner')h+=await reqCard();
+ if(ME.role==='owner'){h+=await reqCard();h+=await exCard()}
  if(isStaff()){
   await loadAtt(today());const act=STU.filter(s=>s.active!==false);
   const p=act.filter(s=>ATT[s.id]&&ATT[s.id].st==='P').length,a=act.filter(s=>ATT[s.id]&&ATT[s.id].st==='A').length;
@@ -143,6 +143,7 @@ V.home=async()=>{
  }else{
   if(!STU.length)h+=`<div class="card mut">${T('No student is linked to your mobile number yet. Please contact the centre.','உங்கள் மொபைல் எண்ணுடன் மாணவர் இணைக்கப்படவில்லை. மையத்தைத் தொடர்புகொள்ளவும்.')}</div>`;
   const q=await getDocs(query(collection(fs,'att'),where('parentPhone','==',ME.phone)));const all=[];q.forEach(d=>all.push(d.data()));
+  MKP=[];try{const mq=await getDocs(query(collection(fs,'marks'),where('parentPhone','==',ME.phone),where('pub','==',true)));mq.forEach(d=>MKP.push(d.data()))}catch(e){}
   for(const s of STU){
    const rec=all.filter(x=>x.sid===s.id).sort((a,b)=>b.date<a.date?-1:1);
    const todayRec=rec.find(x=>x.date===today());
@@ -151,7 +152,7 @@ V.home=async()=>{
    h+=`<div class="card"><h2>${esc(s.name)} <span class="tag">${T('Class','வகுப்பு')} ${esc(s.cls)}</span></h2>
    <p>${T('Today','இன்று')}: ${stTag(todayRec)}</p>
    <p class="mut">${T('This month','இந்த மாதம்')}: ${P} ${T('present','வருகை')} · ${A} ${T('absent','வரவில்லை')}</p>
-   <h2 style="margin-top:12px">${T('Attendance report','வருகை அறிக்கை')}</h2>
+   ${exHtml(s)}<h2 style="margin-top:12px">${T('Attendance report','வருகை அறிக்கை')}</h2>
    ${rec.slice(0,31).map(x=>`<div class="row"><b>${fmtD(x.date)}</b>${stTag(x)}</div>`).join('')||`<p class="mut">${T('No records yet.','பதிவுகள் இல்லை.')}</p>`}</div>`;
   }
  }
@@ -302,14 +303,84 @@ async function reset(id){
   alert(T('New PIN for ','புதிய PIN: ')+u.name+': '+pin);listUsers();
  }catch(e){alert(errText(e))}
 }
+let EXS=[],EXID='',MK={},MKP=[];
+async function loadEx(){const q=await getDocs(collection(fs,'exams'));EXS=[];q.forEach(d=>EXS.push({id:d.id,...d.data()}));EXS.sort((a,b)=>(a.date||'')<(b.date||'')?1:-1)}
+const exTag=e=>e.status==='published'?`<span class="tag ok">${T('Published','வெளியிடப்பட்டது')}</span>`:`<span class="tag">${T('Waiting for owner','உரிமையாளர் ஒப்புதல் காத்திருக்கிறது')}</span>`;
+async function exCard(){
+ try{await loadEx()}catch(e){return ''}
+ const d=EXS.filter(e=>e.status!=='published');if(!d.length)return '';
+ return `<div class="card" style="border:2px solid var(--acc)"><h2>${T('Marks waiting for approval','ஒப்புதலுக்கு காத்திருக்கும் மதிப்பெண்கள்')} (${d.length})</h2>${d.map(e=>`<div class="row"><b>${esc(e.name)}<br><span class="mut">${T('Class','வகுப்பு')} ${esc(e.cls)} · ${esc(e.subject)} · ${fmtD(e.date)}</span></b><button class="btn sm" onclick="window.YX.exOpen('${e.id}')">${T('Open','திற')}</button></div>`).join('')}</div>`;
+}
+V.ex=async()=>{
+ await loadStu();await loadEx();
+ if(EXID&&EXS.find(e=>e.id===EXID))return exView();
+ EXID='';
+ $('v').innerHTML=`<div class="card"><h2>${T('New exam','புதிய தேர்வு')}</h2>
+ <label>${T('Exam name','தேர்வு பெயர்')}</label><input id="en">
+ <label>${T('Class','வகுப்பு')}</label><select id="ec">${CLASSES.map(c=>`<option ${c===CLS?'selected':''}>${c}</option>`).join('')}</select>
+ <label>${T('Subject','பாடம்')}</label><input id="es">
+ <label>${T('Maximum marks','அதிகபட்ச மதிப்பெண்')}</label><input id="em" inputmode="numeric" maxlength="3" value="100">
+ <label>${T('Date','தேதி')}</label><input id="ed" type="date" value="${today()}">
+ <div id="m2"></div><button class="btn" onclick="window.YX.addEx()">${T('Create exam','தேர்வை உருவாக்கு')}</button></div>
+ <div class="card"><h2>${T('Exams','தேர்வுகள்')} (${EXS.length})</h2>${EXS.map(e=>`<div class="row"><b>${esc(e.name)}<br><span class="mut">${T('Class','வகுப்பு')} ${esc(e.cls)} · ${esc(e.subject)} · ${fmtD(e.date)}</span></b>${exTag(e)}<button class="btn sm gr" onclick="window.YX.exOpen('${e.id}')">${T('Open','திற')}</button></div>`).join('')||`<p class="mut">-</p>`}</div>`;
+};
+async function addEx(){
+ const name=$('en').value.trim(),cls=$('ec').value,subject=$('es').value.trim(),max=Number($('em').value),date=$('ed').value;
+ if(!name||!subject)return m2(T('Enter exam name and subject.','தேர்வு பெயர் மற்றும் பாடத்தை உள்ளிடவும்.'));
+ if(!(max>0&&max<=1000))return m2(T('Enter valid maximum marks.','சரியான அதிகபட்ச மதிப்பெண்ணை உள்ளிடவும்.'));
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return m2(T('Choose a date.','தேதியைத் தேர்வு செய்யவும்.'));
+ try{const r=doc(collection(fs,'exams'));await setDoc(r,{name,cls,subject,max,date,status:'draft',by:ME.name,at:serverTimestamp()});CLS=cls;EXID=r.id;await V.ex()}catch(e){m2(errText(e))}
+}
+async function exOpen(id){EXID=id;TAB='ex';viewHome()}
+async function exBack(){EXID='';V.ex()}
+async function exView(){
+ const e=EXS.find(x=>x.id===EXID);
+ const q=await getDocs(query(collection(fs,'marks'),where('eid','==',EXID)));MK={};q.forEach(d=>{const x=d.data();MK[x.sid]=x});
+ const rows=STU.filter(s=>s.cls===e.cls&&s.active!==false);
+ const lock=e.status==='published'&&ME.role!=='owner';
+ $('v').innerHTML=`<div class="card"><button class="btn sm gr" onclick="window.YX.exBack()">← ${T('Back','பின்')}</button>
+ <h2 style="margin-top:10px">${esc(e.name)} ${exTag(e)}</h2><p class="mut">${T('Class','வகுப்பு')} ${esc(e.cls)} · ${esc(e.subject)} · ${fmtD(e.date)} · ${T('Max','அதிகபட்சம்')} ${e.max}</p>
+ <p class="mut">${T('Type marks. Write A for absent.','மதிப்பெண்களை உள்ளிடவும். வரவில்லை என்றால் A என எழுதவும்.')}</p><div id="m2"></div>
+ ${rows.map(s=>{const m=MK[s.id];const v=m?(m.ab?'A':m.m):'';return `<div class="row"><b>${esc(s.name)}</b><input id="mk_${s.id}" style="width:80px" value="${esc(v)}" ${lock?'disabled':''}></div>`}).join('')||`<p class="mut">${T('No students in this class.','இந்த வகுப்பில் மாணவர் இல்லை.')}</p>`}
+ ${rows.length&&!lock?`<button class="btn" onclick="window.YX.saveMk()">${T('Save marks','மதிப்பெண்களைச் சேமி')}</button>`:''}
+ ${ME.role==='owner'&&e.status!=='published'?`<button class="btn" style="background:var(--acc);color:#16223b" onclick="window.YX.pubEx()">${T('Approve & publish to parents','ஒப்புதல் அளித்து பெற்றோருக்கு வெளியிடு')}</button>`:''}
+ ${ME.role!=='owner'&&e.status!=='published'?`<p class="mut">${T('After you save, the owner will approve and publish.','சேமித்த பிறகு உரிமையாளர் ஒப்புதல் அளித்து வெளியிடுவார்.')}</p>`:''}</div>`;
+}
+async function saveMk(){
+ const e=EXS.find(x=>x.id===EXID);if(!e)return;
+ const rows=STU.filter(s=>s.cls===e.cls&&s.active!==false),out=[];
+ for(const s of rows){
+  const el=$('mk_'+s.id);if(!el)continue;const v=el.value.trim();if(v==='')continue;
+  if(/^a$/i.test(v)){out.push([s,null,true]);continue}
+  const n=Number(v);if(!(n>=0&&n<=e.max))return m2(T('Invalid marks for ','தவறான மதிப்பெண்: ')+s.name+' (0-'+e.max+')');
+  out.push([s,n,false]);
+ }
+ if(!out.length)return m2(T('Nothing to save.','சேமிக்க எதுவும் இல்லை.'));
+ try{
+  for(const [s,m,ab] of out)await setDoc(doc(fs,'marks',EXID+'_'+s.id),{eid:EXID,sid:s.id,parentPhone:s.parentPhone,cls:e.cls,exam:e.name,subject:e.subject,max:e.max,date:e.date,m,ab,pub:e.status==='published',by:ME.name});
+  await exView();m2(T('Marks saved.','மதிப்பெண்கள் சேமிக்கப்பட்டன.'),true);
+ }catch(x){m2(errText(x))}
+}
+async function pubEx(){
+ const e=EXS.find(x=>x.id===EXID);if(!e)return;
+ if(!Object.keys(MK).length)return m2(T('No marks saved yet.','மதிப்பெண்கள் இன்னும் சேமிக்கப்படவில்லை.'));
+ if(!confirm(T('Publish these marks to parents?','இந்த மதிப்பெண்களை பெற்றோருக்கு வெளியிடவா?')))return;
+ try{
+  for(const sid of Object.keys(MK))await updateDoc(doc(fs,'marks',EXID+'_'+sid),{pub:true});
+  await updateDoc(doc(fs,'exams',EXID),{status:'published'});
+  await V.ex();m2(T('Published to parents.','பெற்றோருக்கு வெளியிடப்பட்டது.'),true);
+ }catch(x){m2(errText(x))}
+}
+const exHtml=s=>{const r=MKP.filter(x=>x.sid===s.id).sort((a,b)=>a.date<b.date?1:-1);
+ return `<h2 style="margin-top:12px">${T('Exam results','தேர்வு முடிவுகள்')}</h2>${r.map(x=>`<div class="row"><b>${esc(x.exam)}<br><span class="mut">${esc(x.subject)} · ${fmtD(x.date)}</span></b><span class="tag ok">${x.ab?T('Absent','வரவில்லை'):x.m+' / '+x.max}</span></div>`).join('')||`<p class="mut">${T('No results yet.','முடிவுகள் இல்லை.')}</p>`}`};
 async function route(){
  const u=auth.currentUser;
- if(!u){TAB='home';CLS='';STU=[];ATT={};return viewLogin()}
+ if(!u){TAB='home';CLS='';STU=[];ATT={};EXID='';return viewLogin()}
  if(!ME){ME=await loadMe(u)}
  if(!ME||ME.active!==true){const bad=ME;await signOut(auth);ME=null;await viewLogin();msg(bad?T('This account is switched off. Contact the owner.','இந்த கணக்கு நிறுத்தப்பட்டுள்ளது. உரிமையாளரைத் தொடர்புகொள்ளவும்.'):T('Account not found.','கணக்கு கிடைக்கவில்லை.'));return}
  if(ME.role==='parent'||(TAB==='acc'&&ME.role!=='owner'))TAB='home';
  viewHome();
 }
-window.YX={lang:()=>setLang(L==='ta'?'en':'ta'),setup:viewSetup,route,toggle,reset,tab:k=>{TAB=k;viewHome()},cls:c=>{CLS=c;V.att()},mark,outAll,stuOff,pinFor,copyMsg};
+window.YX={lang:()=>setLang(L==='ta'?'en':'ta'),setup:viewSetup,route,toggle,reset,tab:k=>{TAB=k;if(k==='ex')EXID='';viewHome()},cls:c=>{CLS=c;V.att()},mark,outAll,stuOff,pinFor,copyMsg,addEx,exOpen,exBack,saveMk,pubEx};
 onAuthStateChanged(auth,async u=>{if(busy)return;ME=null;route()});
 </script></body></html>
