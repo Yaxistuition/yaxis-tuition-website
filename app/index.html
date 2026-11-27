@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="ta"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#12306B">
+<title>Y Axis Tuition – App</title>
+<style>
+:root{--bg:#f3f5fa;--card:#fff;--ink:#16223b;--mut:#6a748a;--pri:#12306B;--acc:#f2a900;--ok:#1B8F1E;--bad:#d64545;--line:#e1e6f0}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Noto Sans Tamil",sans-serif;background:var(--bg);color:var(--ink)}
+.wrap{max-width:460px;margin:0 auto;padding:18px 16px 40px}
+.card{background:var(--card);border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 1px 3px rgba(20,35,70,.1)}
+h1{font-size:20px;margin:6px 0;color:var(--pri)}h2{font-size:16px;margin:0 0 8px;color:var(--pri)}
+label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+input,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:16px;font-family:inherit}
+.btn{background:var(--pri);color:#fff;border:0;border-radius:10px;padding:12px 16px;font-size:15px;cursor:pointer;width:100%;margin-top:14px;font-family:inherit}
+.btn.sm{width:auto;padding:7px 12px;font-size:13px;margin:0}.btn.gr{background:#e8ecf5;color:var(--pri)}.btn.bad{background:var(--bad)}
+.logo{display:block;margin:6px auto 0;width:84px;height:auto}.c{text-align:center}
+.msg{margin:10px 0;padding:10px;border-radius:10px;font-size:14px}.err{background:#fdecec;color:#9b1c1c}.okm{background:#e7f6e8;color:#14611a}
+.row{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--line);font-size:14px}.row:first-child{border-top:0}.row b{flex:1}
+.tag{font-size:11px;padding:2px 8px;border-radius:99px;background:#e8ecf5;color:var(--pri)}.tag.off{background:#fdecec;color:#9b1c1c}
+.mut{color:var(--mut);font-size:13px}.lang{float:right;font-size:13px;color:var(--pri);background:none;border:0;cursor:pointer}
+.pin{font-size:26px;letter-spacing:4px;font-weight:700;color:var(--pri);text-align:center;padding:8px}
+</style></head><body><div class="wrap" id="app"><p class="c mut">…</p></div>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {getAuth,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {getFirestore,doc,getDoc,setDoc,collection,getDocs,updateDoc,writeBatch,serverTimestamp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const cfg={apiKey:"AIzaSyBbXwXd4lZh4iRUH2UGYWVpunrGOEt89JA",authDomain:"yaxis-tuition-ac94f.firebaseapp.com",projectId:"yaxis-tuition-ac94f",storageBucket:"yaxis-tuition-ac94f.firebasestorage.app",messagingSenderId:"1005729199924",appId:"1:1005729199924:web:16a9ea9403fa30fe649761"};
+const app=initializeApp(cfg),auth=getAuth(app),fs=getFirestore(app);
+const OWNER_PHONE="7845592859";
+let L=localStorage.getItem('yx_lang')||'ta';
+const T=(en,ta)=>L==='ta'?ta:en;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const mail=(ph,v)=>ph+(v>1?'.v'+v:'')+'@login.yaxistuition.com';
+const pass=p=>'yx'+p+'#';
+const okPhone=p=>/^[6-9]\d{9}$/.test(p),okPin=p=>/^\d{4,6}$/.test(p);
+let ME=null,busy=false;
+function setLang(l){L=l;try{localStorage.setItem('yx_lang',l)}catch(e){}route()}
+function shell(inner){return `<button class="lang" onclick="window.YX.lang()">${L==='ta'?'English':'தமிழ்'}</button><img class="logo" alt="Y Axis" src="/assets/images/logo.png"><h1 class="c">Y Axis Tuition</h1>${inner}`}
+function msg(t,ok){const e=$('m');if(e)e.innerHTML=t?`<div class="msg ${ok?'okm':'err'}">${esc(t)}</div>`:''}
+function errText(e){const c=(e&&e.code)||'';
+ if(c.includes('invalid-credential')||c.includes('wrong-password')||c.includes('user-not-found'))return T('Wrong mobile number or PIN.','மொபைல் எண் அல்லது PIN தவறு.');
+ if(c.includes('too-many-requests'))return T('Too many attempts. Wait a few minutes and try again.','பலமுறை முயன்றுவிட்டீர்கள். சில நிமிடம் காத்திருந்து மீண்டும் முயலவும்.');
+ if(c.includes('network'))return T('No internet connection.','இணைய இணைப்பு இல்லை.');
+ if(c.includes('email-already-in-use'))return T('This mobile number already has an account.','இந்த எண்ணுக்கு ஏற்கெனவே கணக்கு உள்ளது.');
+ if(c.includes('permission-denied'))return T('Not allowed (permission denied).','அனுமதி இல்லை.');
+ return T('Error: ','பிழை: ')+(c||e&&e.message||'');}
+
+async function ownerExists(){try{return (await getDoc(doc(fs,'meta','owner'))).exists()}catch(e){return null}}
+
+async function viewLogin(){
+ $('app').innerHTML=shell(`<div class="card"><h2>${T('Sign in','உள்நுழைவு')}</h2>
+ <label>${T('Mobile number','மொபைல் எண்')}</label><input id="ph" inputmode="numeric" maxlength="10" autocomplete="username">
+ <label>PIN</label><input id="pn" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password">
+ <div id="m"></div><button class="btn" id="go">${T('Sign in','உள்நுழை')}</button>
+ <p class="mut c">${T('Forgot PIN? Ask the centre owner.','PIN மறந்துவிட்டதா? உரிமையாளரிடம் கேளுங்கள்.')}</p></div><div id="setup"></div>`);
+ $('go').onclick=doLogin;$('pn').onkeydown=e=>{if(e.key==='Enter')doLogin()};
+ const ex=await ownerExists();
+ if(ex===false)$('setup').innerHTML=`<div class="card"><h2>${T('First-time setup','முதல் முறை அமைப்பு')}</h2><p class="mut">${T('The owner account is not created yet.','உரிமையாளர் கணக்கு இன்னும் உருவாக்கப்படவில்லை.')}</p><button class="btn gr" onclick="window.YX.setup()">${T('Set up owner account','உரிமையாளர் கணக்கை உருவாக்கு')}</button></div>`;
+}
+async function doLogin(){
+ if(busy)return;const ph=$('ph').value.trim(),pn=$('pn').value.trim();
+ if(!okPhone(ph))return msg(T('Enter a valid 10-digit mobile number.','சரியான 10 இலக்க மொபைல் எண்ணை உள்ளிடவும்.'));
+ if(!okPin(pn))return msg(T('PIN must be 4 to 6 digits.','PIN 4 முதல் 6 இலக்கம் இருக்க வேண்டும்.'));
+ busy=true;$('go').disabled=true;msg('');
+ try{
+  // try newest account first (after PIN resets the email gets a .vN suffix)
+  let cred=null,last=null;
+  for(const v of [1,2,3]){
+   try{cred=await signInWithEmailAndPassword(auth,mail(ph,v),pass(pn));break}catch(e){last=e;if(!(e.code||'').includes('invalid-credential')&&!(e.code||'').includes('user-not-found'))break}
+  }
+  if(!cred)throw last;
+ }catch(e){msg(errText(e));busy=false;$('go').disabled=false;return}
+ busy=false;ME=null;route();
+}
+async function viewSetup(){
+ $('app').innerHTML=shell(`<div class="card"><h2>${T('Create owner account','உரிமையாளர் கணக்கு')}</h2>
+ <p class="mut">${T('Mobile number is fixed to the centre number. Choose a 6-digit PIN and remember it.','மொபைல் எண் மையத்தின் எண்ணாக நிலையானது. 6 இலக்க PIN தேர்ந்தெடுத்து நினைவில் வையுங்கள்.')}</p>
+ <label>${T('Mobile number','மொபைல் எண்')}</label><input id="ph" value="${OWNER_PHONE}" disabled>
+ <label>${T('New 6-digit PIN','புதிய 6 இலக்க PIN')}</label><input id="pn" type="password" inputmode="numeric" maxlength="6">
+ <label>${T('Repeat PIN','PIN மீண்டும்')}</label><input id="pn2" type="password" inputmode="numeric" maxlength="6">
+ <div id="m"></div><button class="btn" id="go">${T('Create','உருவாக்கு')}</button><button class="btn gr" onclick="window.YX.route()">${T('Back','பின்')}</button></div>`);
+ $('go').onclick=async()=>{
+  const a=$('pn').value.trim(),b=$('pn2').value.trim();
+  if(!/^\d{6}$/.test(a))return msg(T('Owner PIN must be exactly 6 digits.','உரிமையாளர் PIN சரியாக 6 இலக்கம்.'));
+  if(a!==b)return msg(T('The two PINs do not match.','இரு PIN-களும் பொருந்தவில்லை.'));
+  if(await ownerExists()!==false)return msg(T('Owner already exists.','உரிமையாளர் ஏற்கெனவே உள்ளார்.'));
+  $('go').disabled=true;busy=true;
+  try{
+   const c=await createUserWithEmailAndPassword(auth,mail(OWNER_PHONE,1),pass(a));
+   const b2=writeBatch(fs);
+   b2.set(doc(fs,'meta','owner'),{uid:c.user.uid,at:serverTimestamp()});
+   b2.set(doc(fs,'users',c.user.uid),{role:'owner',name:'C. Manimegalai',phone:OWNER_PHONE,active:true,v:1,at:serverTimestamp()});
+   await b2.commit();
+  }catch(e){msg(errText(e));$('go').disabled=false;busy=false;return}
+  busy=false;ME=null;route();
+ };
+}
+async function loadMe(u){
+ try{const s=await getDoc(doc(fs,'users',u.uid));return s.exists()?s.data():null}catch(e){return null}
+}
+async function viewHome(){
+ const r=ME.role;
+ let h=`<div class="card"><h2>${T('Welcome','வணக்கம்')}, ${esc(ME.name||'')}</h2><p class="mut">${esc(ME.phone)} · <span class="tag">${r==='owner'?T('Owner','உரிமையாளர்'):r==='teacher'?T('Teacher','ஆசிரியர்'):T('Parent','பெற்றோர்')}</span></p>
+ <p class="mut">${T('Sign-in works. The full app screens are being added stage by stage.','உள்நுழைவு செயல்படுகிறது. முழு ஆப் திரைகள் கட்டம் கட்டமாகச் சேர்க்கப்படுகின்றன.')}</p></div>`;
+ if(r==='owner')h+=`<div class="card"><h2>${T('Create account','கணக்கு உருவாக்கு')}</h2>
+  <label>${T('Name','பெயர்')}</label><input id="nn">
+  <label>${T('Role','பங்கு')}</label><select id="rl"><option value="teacher">${T('Teacher','ஆசிரியர்')}</option><option value="parent">${T('Parent','பெற்றோர்')}</option></select>
+  <label>${T('Mobile number (login id)','மொபைல் எண் (உள்நுழைவு)')}</label><input id="np" inputmode="numeric" maxlength="10">
+  <div id="m2"></div><button class="btn" id="mk">${T('Generate PIN & create','PIN உருவாக்கி கணக்கு அமை')}</button><div id="out"></div></div>
+  <div class="card"><h2>${T('Accounts','கணக்குகள்')}</h2><div id="ul" class="mut">…</div></div>`;
+ h+=`<button class="btn gr" id="so">${T('Sign out','வெளியேறு')}</button>`;
+ $('app').innerHTML=shell(h);
+ $('so').onclick=()=>signOut(auth);
+ if(r==='owner'){$('mk').onclick=mkAccount;listUsers()}
+}
+function m2(t,ok){$('m2').innerHTML=t?`<div class="msg ${ok?'okm':'err'}">${esc(t)}</div>`:''}
+async function mkUser(ph,name,role,v){
+ // secondary app instance so the owner stays signed in
+ const sec=initializeApp(cfg,'sec'+Date.now()),sa=getAuth(sec);
+ const pin=String(Math.floor(100000+Math.random()*900000));
+ try{
+  const c=await createUserWithEmailAndPassword(sa,mail(ph,v),pass(pin));
+  await setDoc(doc(fs,'users',c.user.uid),{role,name,phone:ph,active:true,v,at:serverTimestamp()});
+  return pin;
+ }finally{try{await signOut(sa)}catch(e){}}
+}
+async function mkAccount(){
+ const name=$('nn').value.trim(),ph=$('np').value.trim(),role=$('rl').value;
+ if(!name)return m2(T('Enter the name.','பெயரை உள்ளிடவும்.'));
+ if(!okPhone(ph))return m2(T('Enter a valid 10-digit mobile number.','சரியான 10 இலக்க மொபைல் எண்ணை உள்ளிடவும்.'));
+ if(ph===OWNER_PHONE)return m2(T('That is the owner number.','இது உரிமையாளர் எண்.'));
+ $('mk').disabled=true;m2('');
+ try{
+  const pin=await mkUser(ph,name,role,1);
+  $('out').innerHTML=`<div class="msg okm">${T('Account created. Tell this PIN to','கணக்கு உருவானது. இந்த PIN-ஐ தெரிவிக்கவும்:')} ${esc(name)}<div class="pin">${pin}</div><span class="mut">${T('Shown only once.','ஒருமுறை மட்டுமே காட்டப்படும்.')}</span></div>`;
+  $('nn').value='';$('np').value='';listUsers();
+ }catch(e){m2(errText(e))}
+ $('mk').disabled=false;
+}
+async function listUsers(){
+ try{
+  const s=await getDocs(collection(fs,'users'));const rows=[];
+  s.forEach(d=>rows.push({id:d.id,...d.data()}));
+  rows.sort((a,b)=>(a.role>b.role?1:-1)||(a.name||'').localeCompare(b.name||''));
+  $('ul').innerHTML=rows.map(u=>`<div class="row"><b>${esc(u.name||'')}<br><span class="mut">${esc(u.phone)} · ${u.role}</span></b><span class="tag ${u.active?'':'off'}">${u.active?T('Active','செயலில்'):T('Off','நிறுத்தம்')}</span>${u.role==='owner'?'':`<button class="btn sm gr" onclick="window.YX.toggle('${u.id}',${!u.active})">${u.active?T('Deactivate','நிறுத்து'):T('Activate','இயக்கு')}</button><button class="btn sm gr" onclick="window.YX.reset('${u.id}')">${T('New PIN','புதிய PIN')}</button>`}</div>`).join('')||'-';
+  window.__users=rows;
+ }catch(e){$('ul').textContent=errText(e)}
+}
+async function toggle(id,on){await updateDoc(doc(fs,'users',id),{active:on});listUsers()}
+async function reset(id){
+ const u=(window.__users||[]).find(x=>x.id===id);if(!u)return;
+ if(!confirm(T('Create a new PIN for ','புதிய PIN உருவாக்கவா: ')+u.name+'? '+T('The old PIN stops working.','பழைய PIN வேலை செய்யாது.')))return;
+ try{
+  const v=(u.v||1)+1;if(v>5)return alert(T('Too many resets for this number.','இந்த எண்ணுக்கு அதிக முறை மாற்றப்பட்டுவிட்டது.'));
+  const pin=await mkUser(u.phone,u.name,u.role,v);
+  await updateDoc(doc(fs,'users',id),{active:false});
+  alert(T('New PIN for ','புதிய PIN: ')+u.name+': '+pin);listUsers();
+ }catch(e){alert(errText(e))}
+}
+async function route(){
+ const u=auth.currentUser;
+ if(!u)return viewLogin();
+ if(!ME){ME=await loadMe(u)}
+ if(!ME||ME.active!==true){const bad=ME;await signOut(auth);ME=null;await viewLogin();msg(bad?T('This account is switched off. Contact the owner.','இந்த கணக்கு நிறுத்தப்பட்டுள்ளது. உரிமையாளரைத் தொடர்புகொள்ளவும்.'):T('Account not found.','கணக்கு கிடைக்கவில்லை.'));return}
+ viewHome();
+}
+window.YX={lang:()=>setLang(L==='ta'?'en':'ta'),setup:viewSetup,route,toggle,reset};
+onAuthStateChanged(auth,async u=>{if(busy)return;ME=null;route()});
+</script></body></html>
