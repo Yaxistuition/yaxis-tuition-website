@@ -114,6 +114,7 @@ details.acd{background:#fff;border:1px solid #e6eaf3;border-radius:16px;margin:1
 .mtile{display:flex;align-items:center;gap:14px;width:100%;background:#fff;border:1px solid #e6eaf3;border-radius:16px;padding:18px;font-size:19px;font-weight:800;color:var(--pri);margin:0 0 10px;cursor:pointer;font-family:inherit;text-align:left;box-shadow:none}.mtile span{font-size:24px}
 .hcp{background:rgba(255,255,255,.15);border-radius:10px;padding:7px 10px;margin:10px 0;font-size:13px;display:inline-block}.hst{display:flex;gap:8px;margin-top:6px;padding-right:0}.hst div{flex:1;background:rgba(255,255,255,.14);border-radius:12px;padding:8px;text-align:center}.hst b{display:block;font-size:19px}.hst span{font-size:11px;opacity:.85}
 @media(min-width:900px){.mchips{grid-template-columns:repeat(6,1fr)}.cch{grid-template-columns:repeat(7,1fr)}.hero2 .hst{max-width:60%}}
+@media(max-width:899px){#nl-badge-frame{bottom:78px!important}}
 </style></head><body><div id="app"><p class="c mut">…</p></div>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
@@ -868,7 +869,7 @@ async function attRep(){
   r.push(p,a);rows.push(r);
   body+=`<tr><td class="n">${esc(s.name)}</td>${tds}</tr>`;
  });
- AGR={m,rows};
+ AGR={m,rows};setTimeout(()=>{const g=document.querySelector('.ag');if(g&&m===cur)g.scrollLeft=Math.max(0,(+td.slice(8)-8)*28)},50);
  const away=act.filter(s=>!(ATT[s.id]&&ATT[s.id].st==='P'));
  $('v').innerHTML=attTabs()+`<div class="card"><h2>${T('Students · Today','மாணவர்கள் · இன்று')}</h2><div class="rcap"><div class="ring" style="background:conic-gradient(#1B8F1E 0 ${pct}%,${act.length?'#d64545':'#dfe5f0'} ${pct}% 100%)"><div>${pr}/${act.length}<small>${T('present','வந்தவர்')}</small></div></div><div><div style="font-size:18px;font-weight:700"><span style="color:#1B8F1E">● ${pr}</span> ${T('Present','வந்தவர்')}</div><div style="font-size:18px;font-weight:700;margin-top:4px"><span style="color:#d64545">● ${ab}</span> ${T('Absent','வராதவர்')}</div></div></div>${away.length?`<div style="margin-top:10px">${T('Absent','வராதவர்')}: ${away.map(s=>`<span class="pill">${esc(s.name)}</span>`).join('')}</div>`:''}</div>
  <div class="mchips">${pKeys().map(k=>`<button class="${k===m?'on':''}" onclick="window.YX.attM('${k}')">${mLab(k)}</button>`).join('')}</div>
