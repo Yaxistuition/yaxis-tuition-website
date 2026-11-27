@@ -73,6 +73,11 @@ input,select,textarea{width:100%;padding:11px;border:1px solid var(--line);borde
  .lform{max-width:460px;width:100%;margin:0 auto}.lform>.card:first-child{margin-top:0}
  .addr{grid-column:1/-1}
 }
+.xt{border-collapse:collapse;width:100%;font-size:13px}.xt th,.xt td{border-bottom:1px solid var(--line);padding:7px 6px;text-align:right;white-space:nowrap}.xt th:first-child,.xt td:first-child{text-align:left}.xt th{color:var(--mut);font-weight:600}.xt tr.cl{cursor:pointer}.dn{color:var(--bad)}
+.cg{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px}.cg .w{font-size:11px;color:var(--mut);text-align:center}
+.cd{position:relative;min-height:54px;border:1px solid var(--line);background:#fff;border-radius:10px;padding:4px;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:auto;margin:0;box-shadow:none;color:var(--ink);font-size:13px}.cd.td{border:2px solid var(--pri)}.cd.sel{background:#e6edf8}.cd.ho{background:#fff4d6}.cd i{font-style:normal;font-size:12px}.cd .pc{font-size:10px;background:#dff5e8;color:#136b3a;border-radius:99px;padding:0 6px}.cd .lc{font-size:10px;background:#fde3e3;color:#9b2222;border-radius:99px;padding:0 6px}
+details summary{cursor:pointer;padding:4px 0}
+#prt{display:none}@media print{#app{display:none!important}#prt{display:block;padding:10px;color:#000}body{background:#fff}.xt th,.xt td{padding:4px 6px}}
 </style></head><body><div id="app"><p class="c mut">…</p></div>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
@@ -169,13 +174,11 @@ async function loadAtt(date){
  const s=await getDocs(query(collection(fs,'att'),where('date','==',date)));ATT={};s.forEach(d=>{const x=d.data();ATT[x.sid]=x});
 }
 function navItems(){
- const t=[['home','🏠',T('Home','முகப்பு')]];
- if(ME.role==='parent')return t;
- t.push(['stu','🎓',T('Students','மாணவர்கள்')],['att','🗓️',T('Attendance','வருகை')],['ex','📝',T('Exams','தேர்வுகள்')],['sa','🕘',ME.role==='owner'?T('Staff','ஆசிரியர் வருகை'):T('My attendance','என் வருகை')]);
- if(ME.role==='owner')t.push(['fee','💰',T('Fees','கட்டணம்')],['nt','📢',T('Notices','அறிவிப்புகள்')],['acc','🔑',T('Accounts','கணக்குகள்')]);
- return t;
+ if(ME.role==='parent')return [['home','👨‍👩‍👧',T('My Children','குழந்தைகள்')],['alerts','🔔',T('Alerts','அறிவிப்புகள்')]];
+ if(ME.role==='owner')return [['home','🏠',T('Home','முகப்பு')],['att','🗓️',T('Attendance','வருகை')],['cal','🎉',T('Calendar','நாட்காட்டி')],['lv','🌴',T('Leave','விடுப்பு')],['pay','💰',T('Salary','சம்பளம்')],['pgrid','📈',T('Progress Reports','முன்னேற்ற அறிக்கைகள்')],['acc','🔑',T('Manage Accounts','கணக்குகள்')],['stu','📝',T('Student Entry','மாணவர் பதிவு')],['alerts','🔔',T('Alerts','அறிவிப்புகள்')],['settings','⚙️',T('Settings','அமைப்புகள்')],['ex','📋',T('Exams','தேர்வுகள்')],['fee','🧾',T('Fees','கட்டணம்')]];
+ return [['home','🏠',T('Home','முகப்பு')],['sa','🕘',T('My Attendance','என் வருகை')],['att','🗓️',T('Student Attendance','மாணவர் வருகை')],['stu','🎓',T('Student Entry','மாணவர் பதிவு')],['lv','🌴',T('Leave','விடுப்பு')],['ex','📈',T('Progress','முன்னேற்றம்')],['pgrid','📊',T('Progress Reports','முன்னேற்ற அறிக்கைகள்')]];
 }
-const mainKeys=()=>ME.role==='owner'?['home','stu','att','fee']:navItems().map(x=>x[0]);
+const mainKeys=()=>ME.role==='owner'?['home','att','cal','lv','pay']:ME.role==='teacher'?['home','sa','att','stu','lv']:['home','alerts'];
 function side(){const it=navItems();if(it.length<2)return '';return `<nav class="side"><div class="logo2"><img src="/assets/images/logo.png" alt="Y Axis Tuition"></div>${it.map(x=>`<button class="${x[0]===TAB?'on':''}" onclick="window.YX.tab('${x[0]}')">${x[1]} ${x[2]}</button>`).join('')}</nav>`}
 function bnav(){const it=navItems();if(it.length<2)return '';const mk=mainKeys(),main=it.filter(x=>mk.includes(x[0])),more=it.length>main.length,act=main.some(x=>x[0]===TAB)?TAB:'more';
  return `<div class="bnav"><div>${main.map(x=>`<button class="${act===x[0]?'on':''}" onclick="window.YX.tab('${x[0]}')"><i>${x[1]}</i>${x[2]}</button>`).join('')}${more?`<button class="${act==='more'?'on':''}" onclick="window.YX.tab('more')"><i>☰</i>${T('More','மேலும்')}</button>`:''}</div></div>`}
@@ -464,26 +467,26 @@ V.sa=async()=>{
 };
 async function setCen(){
  const rad=Number($('rad').value);if(!(rad>=30&&rad<=2000))return m2(T('Radius must be 30 to 2000 metres.','சுற்றளவு 30 முதல் 2000 மீ வரை இருக்க வேண்டும்.'));
- try{const p=await getPos();await setDoc(doc(fs,'meta','centre'),{lat:p.latitude,lng:p.longitude,radius:rad,at:serverTimestamp()});await V.sa();m2(T('Centre saved.','மையம் சேமிக்கப்பட்டது.'),true)}catch(e){m2(e&&e.code!==undefined&&typeof e.code==='number'||(e&&e.code==='nogeo')?geoErr(e):errText(e))}
+ try{const p=await getPos();await setDoc(doc(fs,'meta','centre'),{lat:p.latitude,lng:p.longitude,radius:rad,at:serverTimestamp()});await V[TAB]();m2(T('Centre saved.','மையம் சேமிக்கப்பட்டது.'),true)}catch(e){m2(e&&e.code!==undefined&&typeof e.code==='number'||(e&&e.code==='nogeo')?geoErr(e):errText(e))}
 }
 async function saIn(){
  try{
   const uid=auth.currentUser.uid;let p=null,d=null;
   if(CEN){p=await getPos();d=Math.round(dist(CEN.lat,CEN.lng,p.latitude,p.longitude));if(d>CEN.radius)return m2(T('You are ','நீங்கள் ')+d+T(' m away from the centre. Check-in is allowed within ',' மீ தொலைவில் உள்ளீர்கள். அனுமதி: ')+CEN.radius+' m.')}
   await setDoc(doc(fs,'satt',today()+'_'+uid),{uid,name:ME.name,date:today(),in:nowHM(),out:null,lat:p?p.latitude:null,lng:p?p.longitude:null,dist:d});
-  await V.sa();m2(T('Check-in saved.','வருகை பதிவானது.'),true);
+  await V[TAB]();m2(T('Check-in saved.','வருகை பதிவானது.'),true);
  }catch(e){m2(e&&(typeof e.code==='number'||e.code==='nogeo')?geoErr(e):errText(e))}
 }
 async function saOut(){
  try{const uid=auth.currentUser.uid,id=today()+'_'+uid,s=await getDoc(doc(fs,'satt',id));if(!s.exists())return;
-  await setDoc(doc(fs,'satt',id),{...s.data(),out:nowHM()});await V.sa();m2(T('Check-out saved.','வெளியேறுதல் பதிவானது.'),true)}catch(e){m2(errText(e))}
+  await setDoc(doc(fs,'satt',id),{...s.data(),out:nowHM()});await V[TAB]();m2(T('Check-out saved.','வெளியேறுதல் பதிவானது.'),true)}catch(e){m2(errText(e))}
 }
 async function addHol(){
  const date=$('hd').value,name=$('hn').value.trim();
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!name){$('m3').innerHTML=`<div class="msg err">${T('Enter date and reason.','தேதி மற்றும் காரணத்தை உள்ளிடவும்.')}</div>`;return}
- try{await setDoc(doc(fs,'holidays',date),{date,name});await V.sa()}catch(e){$('m3').innerHTML=`<div class="msg err">${esc(errText(e))}</div>`}
+ try{await setDoc(doc(fs,'holidays',date),{date,name});await V[TAB]()}catch(e){$('m3').innerHTML=`<div class="msg err">${esc(errText(e))}</div>`}
 }
-async function delHol(d){try{await deleteDoc(doc(fs,'holidays',d));await V.sa()}catch(e){alert(errText(e))}}
+async function delHol(d){try{await deleteDoc(doc(fs,'holidays',d));await V[TAB]()}catch(e){alert(errText(e))}}
 let MON='',PAYS=[],PAYP=[],UPI='',NOT=[];
 const rs=n=>'₹'+(Number(n)||0);
 async function loadUpi(){try{const d=await getDoc(doc(fs,'meta','pay'));UPI=d.exists()?(d.data().upi||''):''}catch(e){UPI=''}}
@@ -506,9 +509,9 @@ V.nt=async()=>{
 };
 async function addNt(){
  const title=$('nt').value.trim(),body=$('nb').value.trim();if(!title)return m2(T('Enter a title.','தலைப்பை உள்ளிடவும்.'));
- try{await setDoc(doc(collection(fs,'notices')),{title,body,date:today(),by:ME.name,at:serverTimestamp()});await V.nt()}catch(e){m2(errText(e))}
+ try{await setDoc(doc(collection(fs,'notices')),{title,body,date:today(),by:ME.name,at:serverTimestamp()});await V[TAB]()}catch(e){m2(errText(e))}
 }
-async function delNt(id){try{await deleteDoc(doc(fs,'notices',id));await V.nt()}catch(e){alert(errText(e))}}
+async function delNt(id){try{await deleteDoc(doc(fs,'notices',id));await V[TAB]()}catch(e){alert(errText(e))}}
 async function loadPay(){const q=await getDocs(query(collection(fs,'pay'),where('month','==',MON)));PAYS=[];q.forEach(d=>PAYS.push({id:d.id,...d.data()}))}
 V.fee=async()=>{
  if(!MON)MON=today().slice(0,7);
@@ -531,15 +534,270 @@ async function recPay(id){
  try{await setDoc(doc(collection(fs,'pay')),{sid:id,parentPhone:s.parentPhone,name:s.name,cls:s.cls,month:MON,amount:n,date:today(),by:ME.name,at:serverTimestamp()});await V.fee();m2(T('Payment recorded.','பதிவு செய்யப்பட்டது.'),true)}catch(e){m2(errText(e))}
 }
 async function delPay(id){if(!confirm(T('Remove this payment record?','இந்த பதிவை நீக்கவா?')))return;try{await deleteDoc(doc(fs,'pay',id));await V.fee()}catch(e){m2(errText(e))}}
-async function setUpi(){const u=$('upi').value.trim();if(u&&!/^[\w.\-]{2,}@[\w.\-]{2,}$/.test(u))return m2(T('Enter a valid UPI id like name@bank.','name@bank போன்ற சரியான UPI id ஐ உள்ளிடவும்.'));try{await setDoc(doc(fs,'meta','pay'),{upi:u});await V.fee();m2(T('Saved.','சேமிக்கப்பட்டது.'),true)}catch(e){m2(errText(e))}}
+async function setUpi(){const u=$('upi').value.trim();if(u&&!/^[\w.\-]{2,}@[\w.\-]{2,}$/.test(u))return m2(T('Enter a valid UPI id like name@bank.','name@bank போன்ற சரியான UPI id ஐ உள்ளிடவும்.'));try{await setDoc(doc(fs,'meta','pay'),{upi:u});await V[TAB]();m2(T('Saved.','சேமிக்கப்பட்டது.'),true)}catch(e){m2(errText(e))}}
+/* ===== stage 8: prototype menu (calendar, leave, salary, progress, alerts, settings, reports) ===== */
+let TCH=[],SAL={},SET={method:'26',div:26,sun:'work'},LV=[],SATM=[],ATAB='t',CALM='',CALD='',LTAB='r',PM='',SHEET=null,PGC='';
+const pad=n=>String(n).padStart(2,'0');
+const MNT=['','ஜனவரி','பிப்ரவரி','மார்ச்','ஏப்ரல்','மே','ஜூன்','ஜூலை','ஆகஸ்ட்','செப்டம்பர்','அக்டோபர்','நவம்பர்','டிசம்பர்'],MNE=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const mLab=m=>{const [y,mm]=m.split('-');return (L==='ta'?MNT:MNE)[+mm]+' '+y};
+const dim=m=>{const [y,mm]=m.split('-').map(Number);return new Date(y,mm,0).getDate()};
+const mEnd=m=>m+'-'+pad(dim(m));
+const addM=(m,k)=>{let [y,mm]=m.split('-').map(Number);mm+=k;while(mm>12){mm-=12;y++}while(mm<1){mm+=12;y--}return y+'-'+pad(mm)};
+const pKeys=()=>{const c=today().slice(0,7);return [0,1,2,3,4,5].map(i=>addM(c,-i))};
+const dow=d=>new Date(d+'T00:00:00Z').getUTCDay();
+const WD=()=>L==='ta'?['ஞா','தி','செ','பு','வி','வெ','ச']:['S','M','T','W','T','F','S'];
+async function loadTch(){
+ try{const q=await getDocs(collection(fs,'users'));TCH=[];q.forEach(d=>{const x=d.data();if(x.role==='teacher'&&x.active!==false)TCH.push({uid:d.id,name:x.name||'',phone:x.phone||''})});TCH.sort((a,b)=>a.name.localeCompare(b.name))}catch(e){TCH=[]}
+ try{const q=await getDocs(collection(fs,'sal'));SAL={};q.forEach(d=>SAL[d.id]=Number(d.data().salary)||0)}catch(e){SAL={}}
+}
+async function loadSet(){try{const d=await getDoc(doc(fs,'meta','settings'));SET=d.exists()?{method:'26',div:26,sun:'work',...d.data()}:{method:'26',div:26,sun:'work'}}catch(e){}}
+async function loadSatM(m){const q=await getDocs(query(collection(fs,'satt'),where('date','>=',m+'-01'),where('date','<=',m+'-31')));SATM=[];q.forEach(d=>SATM.push(d.data()))}
+async function loadLv(){try{const c=collection(fs,'leaves');const s=await getDocs(ME.role==='owner'?c:query(c,where('uid','==',auth.currentUser.uid)));LV=[];s.forEach(d=>LV.push({id:d.id,...d.data()}));LV.sort((a,b)=>a.date<b.date?1:-1)}catch(e){LV=[]}}
+async function prep(m){await loadHol();await loadSet();await loadTch();await loadLv();await loadSatM(m)}
+async function loadPR(m){try{const d=await getDoc(doc(fs,'payroll',m));return d.exists()?{status:'pending',locked:false,snap:{},...d.data()}:{status:'pending',locked:false,snap:{}}}catch(e){return {status:'pending',locked:false,snap:{}}}}
+function wdays(m){const r=[];for(let i=1;i<=dim(m);i++){const d=m+'-'+pad(i);if(HOL.some(h=>h.date===d))continue;if(SET.sun==='holiday'&&dow(d)===0)continue;r.push(d)}return r}
+const paidIn=(uid,m)=>LV.filter(l=>l.uid===uid&&l.status==='approved'&&l.type==='paid'&&l.date.startsWith(m)).length;
+function payCalc(t,m){
+ const sal=SAL[t.uid]||0,wd=wdays(m),up=mEnd(m)<today()?mEnd(m):today(),past=wd.filter(d=>d<=up);
+ const pres=new Set(SATM.filter(x=>x.uid===t.uid&&x.date.startsWith(m)).map(x=>x.date));
+ const lvd={};LV.filter(l=>l.uid===t.uid&&l.status==='approved'&&l.date.startsWith(m)).forEach(l=>lvd[l.date]=l.type);
+ const present=past.filter(d=>pres.has(d)).length;
+ const pl=past.filter(d=>!pres.has(d)&&lvd[d]==='paid').length,ul=past.filter(d=>!pres.has(d)&&lvd[d]==='unpaid').length;
+ const ua=past.filter(d=>!pres.has(d)&&!lvd[d]).length;
+ const div=SET.method==='cal'?wd.length:SET.method==='custom'?(+SET.div||26):(+SET.method||26);
+ const daily=div?sal/div:0,dedU=Math.round(daily*ul),dedA=Math.round(daily*ua),ded=Math.min(sal,dedU+dedA);
+ return {sal,div,hol:dim(m)-wd.length,daily,present,pl,ul,ua,dedU,dedA,ded,pay:Math.max(0,Math.round(sal-ded)),rows:past.map(d=>({d,e:SATM.find(x=>x.uid===t.uid&&x.date===d),st:pres.has(d)?'P':lvd[d]==='paid'?'PL':lvd[d]==='unpaid'?'UL':'A'}))};
+}
+const stP=s=>({P:['Present','வந்தார்','ok'],PL:['Paid leave','ஊதிய விடுப்பு','ok'],UL:['Unpaid leave','ஊதியமற்ற விடுப்பு','off'],A:['Absent','வரவில்லை','off']})[s];
+const pill=s=>{const x=stP(s);return `<span class="tag ${x[2]}">${T(x[0],x[1])}</span>`};
+const tblH=rows=>`<table class="xt">${rows.map((r,i)=>'<tr>'+r.map(c=>`<${i?'td':'th'}>${esc(c==null?'':c)}</${i?'td':'th'}>`).join('')+'</tr>').join('')}</table>`;
+function loadScript(u){return new Promise((ok,no)=>{if(window.XLSX)return ok();const s=document.createElement('script');s.src=u;s.onload=ok;s.onerror=no;document.head.appendChild(s)})}
+async function dlX(sheets,name){
+ try{await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');const wb=XLSX.utils.book_new();sheets.forEach(s=>XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(s.rows),s.name.slice(0,31)));XLSX.writeFile(wb,name+'.xlsx');return}catch(e){}
+ const cl=c=>{let v=String(c==null?'':c);if(/^[=+\-@]/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"'};
+ const csv=sheets.map(s=>s.name+'\n'+s.rows.map(r=>r.map(cl).join(',')).join('\n')).join('\n\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download=name+'.csv';document.body.appendChild(a);a.click();a.remove()}
+function printRep(title,secs){let p=$('prt');if(!p){p=document.createElement('div');p.id='prt';document.body.appendChild(p)}p.innerHTML=`<h2>Y Axis Tuition Centre — ${esc(title)}</h2>`+secs.map(s=>`<h3>${esc(s.name)}</h3>${tblH(s.rows)}`).join('');setTimeout(()=>window.print(),60)}
+async function repData(m){
+ await loadStu();await prep(m);
+ const q=await getDocs(query(collection(fs,'att'),where('date','>=',m+'-01'),where('date','<=',m+'-31')));const A=[];q.forEach(d=>A.push(d.data()));
+ const pay=[['Teacher','Mobile','Basic','Divisor','Present','Paid leave','Unpaid leave','Unauthorized absence','Deduction','Payable']];
+ TCH.forEach(t=>{const r=payCalc(t,m);pay.push([t.name,t.phone,r.sal,r.div,r.present,r.pl,r.ul,r.ua,r.ded,r.pay])});
+ const stu=[['Student','Class','Parent','Parent mobile','Present days','Absent days']];
+ STU.filter(s=>s.active!==false).forEach(s=>{const a=A.filter(x=>x.sid===s.id);stu.push([s.name,s.cls,s.parentName||'',s.parentPhone||'',a.filter(x=>x.st==='P').length,a.filter(x=>x.st==='A').length])});
+ return [{name:'Teachers & salary',rows:pay},{name:'Student attendance',rows:stu}];
+}
+async function rep(kind){
+ const m=($('rm')&&$('rm').value)||today().slice(0,7);
+ try{const s=await repData(m);if(kind==='x')await dlX(s,'YAxis_Report_'+m);else printRep(mLab(m),s)}catch(e){alert(errText(e))}
+}
+/* ---- owner dashboard ---- */
+async function ownerDash(){
+ const m=today().slice(0,7),td=today();
+ await loadStu();await loadAtt(td);await prep(m);
+ let h=`<div class="greet"><b>${T('Welcome','வணக்கம்')}, ${esc(ME.name||'')} 👋</b><span>${roleName(ME.role)} · ${esc(ME.phone)} · ${fmtD(td)}</span></div>`;
+ const hol=HOL.find(x=>x.date===td);if(hol)h+=`<div class="card" style="border:2px solid var(--acc)"><b>🎉 ${T('Holiday today','இன்று விடுமுறை')}: ${esc(hol.name)}</b></div>`;
+ const pl=LV.filter(l=>l.status==='pending');
+ const ac=(await reqCard())+(await exCard())+(pl.length?`<div class="card"><h2>${T('Leave requests','விடுப்பு கோரிக்கைகள்')} (${pl.length})</h2>${pl.slice(0,5).map(l=>`<div class="row"><b>${esc(l.name)}<br><span class="mut">${fmtD(l.date)} · ${l.type==='paid'?T('Paid','ஊதியம்'):T('Unpaid','ஊதியமற்றது')}</span></b></div>`).join('')}<button class="btn" onclick="window.YX.tab('lv')">${T('Review requests','கோரிக்கைகளைப் பார்')}</button></div>`:'');
+ if(ac)h+=`<h2 style="margin:4px 0 8px">⚡ ${T('Action needed','நடவடிக்கை தேவை')}</h2>`+ac;
+ const here=new Set(SATM.filter(x=>x.date===td).map(x=>x.uid)),away=TCH.filter(t=>!here.has(t.uid));
+ const act=STU.filter(s=>s.active!==false),ps=act.filter(s=>ATT[s.id]&&ATT[s.id].st==='P').length,ab=act.filter(s=>ATT[s.id]&&ATT[s.id].st==='A');
+ const est=TCH.reduce((a,t)=>a+payCalc(t,m).pay,0),nosal=TCH.filter(t=>!SAL[t.uid]).length;
+ h+=`<div class="stats" style="grid-template-columns:1fr 1fr;margin-bottom:12px"><div onclick="window.YX.tab('att')" style="cursor:pointer"><b>${here.size}/${TCH.length}</b><span>${T('Teachers today','இன்று ஆசிரியர்கள்')}</span></div><div onclick="window.YX.stuAtt()" style="cursor:pointer"><b>${ps}/${act.length}</b><span>${T('Students today','இன்று மாணவர்கள்')}</span></div></div>
+ <div class="card"><details><summary><b>${away.length} ${T('teachers not in yet — see who','ஆசிரியர்கள் இன்னும் வரவில்லை — யார் என்று பார்')}</b></summary>${away.map(t=>`<div class="row"><b>${esc(t.name)}</b><span class="mut">${esc(t.phone)}</span></div>`).join('')||`<p class="mut">-</p>`}</details>
+ <details style="margin-top:8px"><summary><b>${ab.length} ${T('students absent — see who','மாணவர்கள் வரவில்லை — யார் என்று பார்')}</b></summary>${ab.map(s=>`<div class="row"><b>${esc(s.name)}<br><span class="mut">${T('Class','வகுப்பு')} ${esc(s.cls)} · ${esc(s.parentPhone||'')}</span></b></div>`).join('')||`<p class="mut">-</p>`}</details></div>
+ <div class="card"><h2>💰 ${T('Est. monthly payroll','மதிப்பீட்டு மாத சம்பளம்')} · ${mLab(m)}</h2><div class="stats" style="grid-template-columns:1fr 1fr"><div><b>${rs(est)}</b><span>${T('Payable so far','இதுவரை செலுத்த வேண்டியது')}</span></div><div><b>${TCH.length-nosal}/${TCH.length}</b><span>${T('Salary set','சம்பளம் அமைத்தவர்')}</span></div></div><button class="btn gr" onclick="window.YX.tab('pay')">${T('Open salary','சம்பளத்தைத் திற')}</button></div>
+ <div class="card"><h2>📊 ${T('Excel & PDF reports','Excel & PDF அறிக்கைகள்')}</h2><label>${T('Month','மாதம்')}</label><input id="rm" type="month" value="${m}"><div class="ab"><button class="btn sm" onclick="window.YX.rep('x')">📗 .XLSX ${T('Export','ஏற்றுமதி')}</button><button class="btn sm gr" onclick="window.YX.rep('p')">📄 PDF ${T('Report','அறிக்கை')}</button></div></div>`;
+ h+=await ntCard();
+ $('v').innerHTML=h;
+}
+const _h7=V.home;V.home=async()=>{if(ME.role==='owner')return ownerDash();return _h7()};
+/* ---- attendance: students / teachers ---- */
+const _att7=V.att;
+V.att=async()=>{
+ if(ME.role!=='owner')return _att7();
+ const tabs=`<div class="chips"><button class="${ATAB==='t'?'on':''}" onclick="window.YX.atab('t')">${T('Teachers','ஆசிரியர்கள்')}</button><button class="${ATAB==='s'?'on':''}" onclick="window.YX.atab('s')">${T('Students','மாணவர்கள்')}</button></div>`;
+ if(ATAB==='s'){await _att7();$('v').insertAdjacentHTML('afterbegin',tabs);return}
+ const m=today().slice(0,7);await prep(m);const td=today(),hol=HOL.find(x=>x.date===td);
+ const lvT=new Set(LV.filter(l=>l.status==='approved'&&l.date===td).map(l=>l.uid));
+ $('v').innerHTML=tabs+(hol?`<div class="card" style="border:2px solid var(--acc)"><b>🎉 ${T('Holiday today','இன்று விடுமுறை')}: ${esc(hol.name)}</b></div>`:'')+`<div class="card"><h2>${T('Teachers','ஆசிரியர்கள்')} · ${fmtD(td)}</h2>`+(TCH.map(t=>{const r=SATM.find(x=>x.uid===t.uid&&x.date===td),n=SATM.filter(x=>x.uid===t.uid).length;
+  return `<div class="row"><b>${esc(t.name)}<br><span class="mut">${n} ${T('days this month','நாட்கள் இந்த மாதம்')}</span></b>${r?`<span class="tag ok">${r.in||''}${r.out?' → '+r.out:''}</span>`:lvT.has(t.uid)?`<span class="tag">${T('On leave','விடுப்பு')}</span>`:`<span class="tag off">${T('Not in','வரவில்லை')}</span>`}<button class="btn sm gr" onclick="window.YX.sheetOpen('${t.uid}')">${T('Sheet','பதிவேடு')}</button></div>`}).join('')||`<p class="mut">${T('No teachers yet. Create them in Manage Accounts.','ஆசிரியர் இல்லை. கணக்குகளில் உருவாக்கவும்.')}</p>`)+'</div>';
+};
+/* ---- calendar ---- */
+V.cal=async()=>{
+ if(!CALM)CALM=today().slice(0,7);const m=CALM;await prep(m);
+ const first=dow(m+'-01'),n=dim(m);let cells=WD().map(w=>`<div class="w">${w}</div>`).join('');
+ for(let i=0;i<first;i++)cells+='<div></div>';
+ for(let i=1;i<=n;i++){const d=m+'-'+pad(i),h=HOL.find(x=>x.date===d),sun=SET.sun==='holiday'&&dow(d)===0,pc=SATM.filter(x=>x.date===d).length,lc=LV.filter(l=>l.date===d&&l.status==='approved').length;
+  cells+=`<button class="cd ${d===today()?'td':''} ${d===CALD?'sel':''} ${h||sun?'ho':''}" onclick="window.YX.calD('${d}')"><b>${i}</b>${h?'<i>🎉</i>':''}${pc?`<span class="pc">${pc}</span>`:''}${lc?`<span class="lc">${lc}</span>`:''}</button>`}
+ let h=`<div class="card"><div class="row" style="border:0"><button class="btn sm gr" onclick="window.YX.calM(-1)">◀</button><b style="text-align:center">${mLab(m)}</b><button class="btn sm gr" onclick="window.YX.calM(1)">▶</button></div><div class="cg">${cells}</div><p class="mut">🎉 ${T('holiday','விடுமுறை')} · <span class="tag ok">n</span> ${T('teachers present','ஆசிரியர் வந்தவர்')} · <span class="tag off">n</span> ${T('on approved leave','அனுமதி விடுப்பு')}</p></div>`;
+ if(CALD&&CALD.startsWith(m)){
+  const d=CALD,ho=HOL.find(x=>x.date===d);let stu=[];
+  try{const q=await getDocs(query(collection(fs,'att'),where('date','==',d)));q.forEach(x=>{const r=x.data();if(r.st==='A')stu.push(r)})}catch(e){}
+  await loadStu();const sn=id=>{const s=STU.find(x=>x.id===id);return s?s.name+' ('+s.cls+')':id};
+  h+=`<div class="card"><h2>${fmtD(d)}</h2>${ho?`<div class="row"><b>🎉 ${esc(ho.name)}</b><button class="btn sm gr" onclick="window.YX.delHol('${d}')">${T('Remove','நீக்கு')}</button></div>`:`<label>${T('Mark as holiday — reason','விடுமுறையாக்கு — காரணம்')}</label><input id="hn"><input id="hd" type="hidden" value="${d}"><div id="m3"></div><button class="btn sm" style="margin-top:8px" onclick="window.YX.addHol()">${T('Add holiday','விடுமுறை சேர்')}</button>`}
+  <h2 style="margin-top:14px;font-size:15px">${T('Teachers','ஆசிரியர்கள்')}</h2>`+(TCH.map(t=>{const r=SATM.find(x=>x.uid===t.uid&&x.date===d),l=LV.find(x=>x.uid===t.uid&&x.date===d&&x.status==='approved');return `<div class="row"><b>${esc(t.name)}</b>${r?`<span class="tag ok">${r.in||''}${r.out?' → '+r.out:''}</span>`:l?`<span class="tag">${l.type==='paid'?T('Paid leave','ஊதிய விடுப்பு'):T('Unpaid leave','ஊதியமற்ற விடுப்பு')}</span>`:'<span class="mut">–</span>'}</div>`}).join('')||'<p class="mut">-</p>')+`<h2 style="margin-top:14px;font-size:15px">${T('Students absent','வராத மாணவர்கள்')} (${stu.length})</h2>`+(stu.map(r=>`<div class="row"><b>${esc(sn(r.sid))}</b></div>`).join('')||'<p class="mut">-</p>')+'</div>';
+ }else h+=`<div class="card mut">${T('Tap a date to see details or mark a holiday.','விவரம் பார்க்க அல்லது விடுமுறையாக்க தேதியைத் தொடவும்.')}</div>`;
+ $('v').innerHTML=h;
+};
+/* ---- leave ---- */
+V.lv=async()=>{await loadHol();await loadLv();if(ME.role==='owner'){await loadTch();return lvOwner()}return lvTeacher()};
+const lvTag=l=>`<span class="tag ${l.status==='approved'?'ok':l.status==='rejected'?'off':''}">${l.status==='approved'?T('Approved','ஒப்புதல்'):l.status==='rejected'?T('Rejected','நிராகரிப்பு'):T('Pending','நிலுவை')}</span> <span class="tag">${l.type==='paid'?T('Paid','ஊதியம்'):T('Unpaid','ஊதியமற்றது')}</span>`;
+function lvTeacher(){
+ const T0=today(),m=T0.slice(0,7),uid=auth.currentUser.uid,used=paidIn(uid,m),pend=LV.filter(l=>l.type==='paid'&&l.status==='pending'&&l.date.startsWith(m)).length;
+ const d=new Date(T0+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+1);const tm=d.toISOString().slice(0,10);
+ $('v').innerHTML=`<div class="card"><h2>${T('My Leave','என் விடுப்பு')}</h2><div class="stats" style="grid-template-columns:1fr 1fr"><div><b>${Math.max(0,1-used)}</b><span>${T('Paid leave left this month','இந்த மாத ஊதிய விடுப்பு மீதம்')}</span></div><div><b>${used}</b><span>${T('Paid leave used','பயன்படுத்தியது')}</span></div></div>
+ <p class="mut">${T('You get ONE paid personal leave every month. It resets on the 1st; unused leave does not carry forward. Extra leave is unpaid (salary deduction).','ஒவ்வொரு மாதமும் ஒரு ஊதிய தனிப்பட்ட விடுப்பு உண்டு. மாதம் 1ஆம் தேதி புதுப்பிக்கப்படும்; பயன்படுத்தாதது அடுத்த மாதத்துக்குப் போகாது. கூடுதல் விடுப்பு ஊதியமற்றது (சம்பளக் கழிவு).')}${pend?' ('+T('pending paid request: ','நிலுவை ஊதிய கோரிக்கை: ')+pend+')':''}</p></div>
+ <div class="card"><h2>${T('Request leave','விடுப்பு கோரு')}</h2><label>${T('Preferred date','விருப்ப தேதி')}</label><input id="lv_d" type="date" min="${T0}" value="${tm}"><label>${T('Reason','காரணம்')}</label><input id="lv_r"><div id="m2"></div><button class="btn acc" onclick="window.YX.reqLeave()">${T('Submit request','கோரிக்கையை அனுப்பு')}</button></div>
+ <div class="card"><h2>${T('Requests & history','கோரிக்கைகள் & வரலாறு')}</h2>${LV.map(l=>`<div class="row"><b>${fmtD(l.date)}<br><span class="mut">${esc(l.reason||'')}</span></b><span>${lvTag(l)}</span>${l.status==='pending'?`<button class="btn sm gr" onclick="window.YX.lvDel('${l.id}')">${T('Cancel','ரத்து')}</button>`:''}</div>`).join('')||`<p class="mut">${T('No leave yet.','விடுப்பு இல்லை.')}</p>`}</div>`;
+}
+async function reqLeave(){
+ const d=$('lv_d').value,r=$('lv_r').value.trim(),T0=today(),uid=auth.currentUser.uid;
+ if(!d||d<T0)return m2(T('Choose today or a future date.','இன்று அல்லது எதிர்கால தேதியைத் தேர்ந்தெடுக்கவும்.'));
+ if(HOL.some(h=>h.date===d))return m2(T('That date is already a holiday.','அது ஏற்கெனவே விடுமுறை நாள்.'));
+ if(LV.some(l=>l.date===d&&l.status!=='rejected'))return m2(T('You already have a request for this date.','இந்த தேதிக்கு ஏற்கெனவே கோரிக்கை உள்ளது.'));
+ const m=d.slice(0,7),type=(paidIn(uid,m)+LV.filter(l=>l.type==='paid'&&l.status==='pending'&&l.date.startsWith(m)).length)<1?'paid':'unpaid';
+ try{await setDoc(doc(collection(fs,'leaves')),{uid,name:ME.name,date:d,reason:r,type,status:'pending',at:serverTimestamp()});await V.lv();m2(type==='paid'?T('Request sent as PAID personal leave.','ஊதிய விடுப்பாகக் கோரிக்கை அனுப்பப்பட்டது.'):T('Request sent as UNPAID leave (this month\'s paid leave is taken).','ஊதியமற்ற விடுப்பாக அனுப்பப்பட்டது (இந்த மாத ஊதிய விடுப்பு எடுக்கப்பட்டுள்ளது).'),true)}catch(e){m2(errText(e))}
+}
+async function lvDel(id){try{await deleteDoc(doc(fs,'leaves',id));await V.lv()}catch(e){alert(errText(e))}}
+async function lvAct(id,st){
+ const l=LV.find(x=>x.id===id);if(!l)return;let type=l.type;if(st==='approved'&&type==='paid'&&paidIn(l.uid,l.date.slice(0,7))>=1)type='unpaid';
+ try{await updateDoc(doc(fs,'leaves',id),{status:st,type});await V.lv()}catch(e){alert(errText(e))}
+}
+function lvOwner(){
+ const tab=(k,l)=>`<button class="${LTAB===k?'on':''}" onclick="window.YX.lvTab('${k}')">${l}</button>`;
+ let h=`<div class="chips">${tab('r',T('Requests','கோரிக்கைகள்')+' '+(LV.filter(l=>l.status==='pending').length||''))}${tab('b',T('Balance & history','இருப்பு & வரலாறு'))}${tab('a',T('Add leave','விடுப்பு சேர்'))}</div>`;
+ const card=l=>`<div class="card"><b>${esc(l.name)}</b> · ${fmtD(l.date)}<br><span class="mut">${esc(l.reason||'')}</span><div style="margin-top:6px">${lvTag(l)}</div>${l.status==='pending'?`<div class="ab"><button class="btn sm acc" onclick="window.YX.lvAct('${l.id}','approved')">✔ ${T('Approve','ஒப்புதல்')}</button><button class="btn sm bad" onclick="window.YX.lvAct('${l.id}','rejected')">✖ ${T('Reject','நிராகரி')}</button></div>`:''}</div>`;
+ if(LTAB==='r'){const p=LV.filter(l=>l.status==='pending').reverse(),o=LV.filter(l=>l.status!=='pending').slice(0,20);
+  h+=(p.map(card).join('')||`<div class="card">${T('No pending requests.','நிலுவை கோரிக்கைகள் இல்லை.')}</div>`)+(o.length?`<h2 style="font-size:16px">${T('Recent decisions','சமீபத்திய முடிவுகள்')}</h2>`+o.map(card).join(''):'')}
+ else if(LTAB==='b'){const ms=pKeys();h+=`<div class="card" style="overflow-x:auto"><table class="xt"><tr><th>${T('Teacher','ஆசிரியர்')}</th>${ms.map(m=>`<th>${mLab(m)}<br><small>${T('Paid / Unpaid','ஊதியம் / இல்லை')}</small></th>`).join('')}</tr>`+TCH.map(t=>`<tr><td>${esc(t.name)}</td>${ms.map(m=>{const a=LV.filter(l=>l.uid===t.uid&&l.status==='approved'&&l.date.startsWith(m));return `<td>${a.filter(l=>l.type==='paid').length} / ${a.filter(l=>l.type==='unpaid').length}</td>`}).join('')}</tr>`).join('')+`</table><p class="mut">${T('Paid leave balance resets to 1 on the 1st of every month.','ஊதிய விடுப்பு இருப்பு ஒவ்வொரு மாதம் 1ஆம் தேதி 1 ஆக மாறும்.')}</p></div>`}
+ else h+=`<div class="card"><h2>${T('Add leave manually (approved immediately)','விடுப்பை கைமுறையாகச் சேர் (உடனே ஒப்புதல்)')}</h2><label>${T('Teacher','ஆசிரியர்')}</label><select id="ml_t">${TCH.map(t=>`<option value="${t.uid}">${esc(t.name)}</option>`).join('')}</select><label>${T('Date','தேதி')}</label><input id="ml_d" type="date" value="${today()}"><label>${T('Type','வகை')}</label><select id="ml_y"><option value="paid">${T('Paid personal leave','ஊதிய தனிப்பட்ட விடுப்பு')}</option><option value="unpaid">${T('Unpaid leave','ஊதியமற்ற விடுப்பு')}</option></select><label>${T('Reason','காரணம்')}</label><input id="ml_r"><div id="m2"></div><button class="btn" onclick="window.YX.manLeave()">${T('Add leave','விடுப்பு சேர்')}</button></div>`;
+ $('v').innerHTML=h;
+}
+async function manLeave(){
+ const uid=$('ml_t').value,d=$('ml_d').value,ty=$('ml_y').value,t=TCH.find(x=>x.uid===uid);
+ if(!t||!d)return m2(T('Choose teacher and date.','ஆசிரியர் மற்றும் தேதியைத் தேர்ந்தெடுக்கவும்.'));
+ if(HOL.some(h=>h.date===d))return m2(T('That date is a holiday.','அது விடுமுறை நாள்.'));
+ if(LV.some(l=>l.uid===uid&&l.date===d&&l.status==='approved'))return m2(T('Leave already exists on this date.','இந்த தேதியில் ஏற்கெனவே விடுப்பு உள்ளது.'));
+ if(ty==='paid'&&paidIn(uid,d.slice(0,7))>=1)return m2(T('This teacher already used the paid leave of that month.','இந்த ஆசிரியர் அந்த மாத ஊதிய விடுப்பை ஏற்கெனவே பயன்படுத்தினார்.'));
+ try{await setDoc(doc(collection(fs,'leaves')),{uid,name:t.name,date:d,reason:$('ml_r').value.trim(),type:ty,status:'approved',manual:true,at:serverTimestamp()});LTAB='r';await V.lv()}catch(e){m2(errText(e))}
+}
+/* ---- salary ---- */
+V.pay=async()=>{
+ if(SHEET)return sheet();
+ if(!PM)PM=pKeys()[0];const m=PM;await prep(m);const p=await loadPR(m);
+ const R=TCH.map(t=>({t,r:p.locked&&p.snap&&p.snap[t.uid]?{...p.snap[t.uid]}:payCalc(t,m)}));
+ const tot=R.reduce((a,o)=>a+o.r.pay,0),ded=R.reduce((a,o)=>a+o.r.ded,0);
+ const drift=p.locked&&TCH.some(t=>p.snap&&p.snap[t.uid]&&payCalc(t,m).pay!==p.snap[t.uid].pay);
+ const sl={pending:['Pending','நிலுவை'],approved:['Approved','ஒப்புதல்'],paid:['Paid','செலுத்தப்பட்டது']}[p.status||'pending'];
+ let h=`<div class="chips">${pKeys().map(k=>`<button class="${k===m?'on':''}" onclick="window.YX.pm('${k}')">${mLab(k)}</button>`).join('')}</div>
+ <div class="card"><div class="stats"><div><b>${TCH.length}</b><span>${T('Teachers','ஆசிரியர்கள்')}</span></div><div><b>${rs(tot)}</b><span>${T('Total payable','மொத்த சம்பளம்')}</span></div><div><b class="dn">${rs(ded)}</b><span>${T('Total deduction','மொத்த கழிவு')}</span></div><div><b style="font-size:13px">${T(sl[0],sl[1])}</b><span>${p.locked?'🔒 '+T('Locked','பூட்டப்பட்டது'):T('Open','திறந்தது')}</span></div></div><div id="m2"></div><div class="ab">`+
+ (p.status==='pending'?`<button class="btn sm acc" ${mEnd(m)<today()?'':'disabled'} onclick="window.YX.payApprove()">✔ ${T('Review done — Approve & lock','சரிபார்த்தேன் — ஒப்புதல் & பூட்டு')}</button>`:'')+
+ (p.status==='approved'?`<button class="btn sm acc" onclick="window.YX.payPaid()">💰 ${T('Mark as paid','செலுத்தியதாகக் குறி')}</button>`:'')+
+ (p.locked?`<button class="btn sm gr" onclick="window.YX.payReopen()">🔓 ${T('Reopen payroll','பேரோலை மீண்டும் திற')}</button>`:'')+`</div>${mEnd(m)<today()?'':`<p class="mut">${T('Approval is possible only after the month ends.','மாதம் முடிந்த பிறகே ஒப்புதல் அளிக்க முடியும்.')}</p>`}</div>`;
+ if(drift)h+=`<div class="card" style="border-left:4px solid var(--bad)">⚠ ${T('Attendance or holidays changed after finalizing. The locked salary was NOT changed. Reopen to recalculate.','இறுதி செய்த பின் வருகை/விடுமுறை மாறியுள்ளது. பூட்டப்பட்ட சம்பளம் மாறவில்லை. மறுகணக்கிட மீண்டும் திறக்கவும்.')}</div>`;
+ h+=`<div class="card" style="overflow-x:auto"><b>${T('Monthly payroll','மாத சம்பளப் பட்டியல்')} — ${mLab(m)}</b><table class="xt" style="margin-top:6px"><tr><th>${T('Teacher','ஆசிரியர்')}</th><th>${T('Basic','அடிப்படை')}</th><th>${T('Divisor','வகுப்பான்')}</th><th>${T('Present','வந்தது')}</th><th>${T('Paid leave','ஊதிய விடு.')}</th><th>${T('Unpaid','ஊதியமற்றது')}</th><th>${T('Unauth.','அனுமதியற்றது')}</th><th>${T('Deduction','கழிவு')}</th><th>${T('Payable','செலுத்த')}</th></tr>`+
+ R.map(o=>`<tr class="cl" onclick="window.YX.sheetOpen('${o.t.uid}')"><td>${esc(o.t.name)}</td><td>${rs(o.r.sal)}</td><td>${o.r.div}</td><td>${o.r.present}</td><td>${o.r.pl}</td><td>${o.r.ul}</td><td>${o.r.ua}</td><td class="dn">${rs(o.r.ded)}</td><td><b>${rs(o.r.pay)}</b></td></tr>`).join('')+`</table><p class="mut">${T('Deduction = Daily salary × (unpaid leave + unauthorized absence days). Holidays and the approved monthly paid leave are never deducted. Tap a teacher for the full breakdown.','கழிவு = ஒரு நாள் சம்பளம் × (ஊதியமற்ற விடுப்பு + அனுமதியற்ற வருகையின்மை நாட்கள்). விடுமுறைகளும் ஒப்புதல் பெற்ற மாத ஊதிய விடுப்பும் கழிக்கப்படாது. முழு விவரத்துக்கு ஆசிரியரைத் தொடவும்.')}</p>
+ <div class="ab"><button class="btn sm" onclick="window.YX.payX()">📗 ${T('Export Excel (.xlsx)','Excel ஏற்றுமதி (.xlsx)')}</button><button class="btn sm gr" onclick="window.YX.payP()">📄 ${T('Export PDF','PDF ஏற்றுமதி')}</button></div></div>`;
+ $('v').innerHTML=h;
+};
+async function payRows(){const m=PM,p=await loadPR(m);const rows=[['Teacher','Mobile','Basic','Divisor','Present','Paid leave','Unpaid leave','Unauthorized','Deduction','Payable','Status']];TCH.forEach(t=>{const r=p.locked&&p.snap&&p.snap[t.uid]?p.snap[t.uid]:payCalc(t,m);rows.push([t.name,t.phone,r.sal,r.div,r.present,r.pl,r.ul,r.ua,r.ded,r.pay,p.status||'pending'])});return rows}
+async function payX(){await dlX([{name:'Payroll '+PM,rows:await payRows()}],'YAxis_Payroll_'+PM)}
+async function payP(){printRep(T('Payroll ','சம்பளம் ')+mLab(PM),[{name:mLab(PM),rows:await payRows()}])}
+async function payApprove(){
+ const m=PM;if(!(mEnd(m)<today()))return m2(T('The month has not ended.','மாதம் இன்னும் முடியவில்லை.'));
+ const snap={};TCH.forEach(t=>{const r=payCalc(t,m);delete r.rows;snap[t.uid]=r});
+ try{await setDoc(doc(fs,'payroll',m),{status:'approved',locked:true,snap,at:serverTimestamp()});await V.pay();m2(T('Payroll finalized and locked.','சம்பளம் இறுதி செய்யப்பட்டு பூட்டப்பட்டது.'),true)}catch(e){m2(errText(e))}
+}
+async function payPaid(){try{await updateDoc(doc(fs,'payroll',PM),{status:'paid'});await V.pay()}catch(e){m2(errText(e))}}
+async function payReopen(){if(!confirm(T('Reopen this month\'s payroll?','இந்த மாத சம்பளத்தை மீண்டும் திறக்கவா?')))return;try{await setDoc(doc(fs,'payroll',PM),{status:'pending',locked:false,snap:{},at:serverTimestamp()});await V.pay()}catch(e){m2(errText(e))}}
+async function sheet(){
+ const m=SHEET.m;await prep(m);const t=TCH.find(x=>x.uid===SHEET.uid);if(!t){SHEET=null;return V.pay()}
+ const p=await loadPR(m),live=payCalc(t,m),R=p.locked&&p.snap&&p.snap[t.uid]?{...live,...p.snap[t.uid]}:live;
+ const rw=(a,b,c)=>`<tr><td>${a}</td><td class="n ${c||''}">${b}</td></tr>`;
+ let h=`<div class="card"><button class="btn sm gr" onclick="window.YX.sheetBack()">◀ ${T('Back','பின்')}</button><h2 style="margin-top:10px">${esc(t.name)} · ${esc(t.phone)}</h2>
+ <label>${T('Monthly salary (₹)','மாத சம்பளம் (₹)')}</label><input id="sal" inputmode="numeric" maxlength="7" value="${SAL[t.uid]||''}"><div id="m2"></div><button class="btn sm" style="margin-top:8px" onclick="window.YX.setSal()">${T('Save salary','சம்பளம் சேமி')}</button></div>
+ <div class="chips">${pKeys().map(k=>`<button class="${k===m?'on':''}" onclick="window.YX.sheetM('${k}')">${mLab(k)}</button>`).join('')}</div>
+ ${p.locked?`<div class="card" style="border-left:4px solid var(--grn)">🔒 ${T('Payroll of this month is finalized. Figures below are the locked values.','இந்த மாத சம்பளம் இறுதி செய்யப்பட்டுள்ளது. கீழ்க்காணும் தொகைகள் பூட்டப்பட்டவை.')}</div>`:''}
+ <div class="card"><div class="stats" style="grid-template-columns:repeat(3,1fr)"><div><b>${R.present}</b><span>${T('Present','வந்த நாள்')}</span></div><div><b>${R.pl}</b><span>${T('Paid leave','ஊதிய விடுப்பு')}</span></div><div><b>${R.ul+R.ua}</b><span>${T('Deductible','கழிவு நாள்')}</span></div></div></div>
+ <div class="card"><b>${T('Salary breakdown','சம்பளப் பிரிவு')}</b><table class="xt" style="margin-top:6px">${rw(T('Monthly basic salary','மாத அடிப்படை சம்பளம்'),rs(R.sal))}${rw(T('Divisor (working days)','வகுப்பான் (வேலை நாட்கள்)'),R.div)}${rw(T('Holidays excluded','நீக்கப்பட்ட விடுமுறைகள்'),R.hol)}${rw(T('Daily salary','ஒரு நாள் சம்பளம்')+' ('+rs(R.sal)+' ÷ '+R.div+')',rs(Math.round(R.daily)))}${rw(T('Unpaid leave days','ஊதியமற்ற விடுப்பு நாட்கள்'),R.ul)}${rw(T('Unauthorized absence days','அனுமதியற்ற வருகையின்மை நாட்கள்'),R.ua)}${rw(T('Total deduction','மொத்த கழிவு'),'− '+rs(R.ded),'dn')}${rw('<b>'+T('Final payable salary','வழங்க வேண்டிய சம்பளம்')+'</b>','<b>'+rs(R.pay)+'</b>')}</table></div>
+ <div class="card" style="overflow-x:auto"><b>${T('Day-wise sheet','நாள்வாரி பதிவேடு')}</b><table class="xt" style="margin-top:6px"><tr><th>${T('Date','தேதி')}</th><th>${T('Status','நிலை')}</th><th>${T('In','வருகை')}</th><th>${T('Out','புறப்பாடு')}</th><th></th></tr>`;
+ live.rows.forEach(r=>{
+  if(SHEET.edit===r.d)h+=`<tr><td colspan="5"><div style="background:#f3f6fc;border-radius:10px;padding:8px;text-align:left"><b>${fmtD(r.d)}</b><div class="ab"><div><label>${T('In','வருகை')}</label><input id="oi" type="time" value="${r.e&&r.e.in||''}"></div><div><label>${T('Out','புறப்பாடு')}</label><input id="oo" type="time" value="${r.e&&r.e.out||''}"></div></div><div class="ab"><button class="btn sm acc" onclick="window.YX.sheetSave('${r.d}')">${T('Save','சேமி')}</button>${r.e?`<button class="btn sm bad" onclick="window.YX.sheetDel('${r.d}')">${T('Delete record','பதிவை நீக்கு')}</button>`:''}<button class="btn sm gr" onclick="window.YX.sheetEdit('')">${T('Cancel','ரத்து')}</button></div></div></td></tr>`;
+  else h+=`<tr><td>${fmtD(r.d)}</td><td>${pill(r.st)}</td><td>${r.e&&r.e.in||'–'}</td><td>${r.e&&r.e.out||'–'}</td><td><button class="btn sm gr" onclick="window.YX.sheetEdit('${r.d}')">✎</button></td></tr>`});
+ h+=`</table><div class="ab"><button class="btn sm gr" onclick="window.YX.sheetP()">📄 ${T('Export PDF','PDF ஏற்றுமதி')}</button></div></div>`;
+ $('v').innerHTML=h;
+}
+async function setSal(){const n=Number($('sal').value);if(!(n>=0&&n<=1000000&&Number.isInteger(n)))return m2(T('Enter a valid salary.','சரியான சம்பளத்தை உள்ளிடவும்.'));try{await setDoc(doc(fs,'sal',SHEET.uid),{salary:n,at:serverTimestamp()});await V.pay();m2(T('Salary saved.','சம்பளம் சேமிக்கப்பட்டது.'),true)}catch(e){m2(errText(e))}}
+async function sheetSave(d){
+ const t=TCH.find(x=>x.uid===SHEET.uid);if(!t)return;const i=$('oi').value,o=$('oo').value;if(!i)return m2(T('Enter the in-time.','வருகை நேரத்தை உள்ளிடவும்.'));
+ try{await setDoc(doc(fs,'satt',d+'_'+t.uid),{uid:t.uid,name:t.name,date:d,in:i,out:o||null,lat:null,lng:null,dist:null,edited:true});SHEET.edit='';await V.pay()}catch(e){m2(errText(e))}
+}
+async function sheetDel(d){if(!confirm(T('Delete this attendance record?','இந்த வருகைப் பதிவை நீக்கவா?')))return;try{await deleteDoc(doc(fs,'satt',d+'_'+SHEET.uid));SHEET.edit='';await V.pay()}catch(e){m2(errText(e))}}
+async function sheetP(){const t=TCH.find(x=>x.uid===SHEET.uid),r=payCalc(t,SHEET.m);printRep(t.name+' — '+mLab(SHEET.m),[{name:T('Summary','சுருக்கம்'),rows:[['Basic','Divisor','Present','Paid leave','Unpaid','Unauthorized','Deduction','Payable'],[r.sal,r.div,r.present,r.pl,r.ul,r.ua,r.ded,r.pay]]},{name:T('Day-wise','நாள்வாரி'),rows:[['Date','Status','In','Out']].concat(r.rows.map(x=>[fmtD(x.d),T(stP(x.st)[0],stP(x.st)[1]),x.e&&x.e.in||'',x.e&&x.e.out||'']))}])}
+/* ---- progress reports ---- */
+V.pgrid=async()=>{
+ await loadStu();if(!PGC)PGC=CLASSES[0];
+ const ex=[],mk={};
+ try{const q=await getDocs(query(collection(fs,'exams'),where('cls','==',PGC)));q.forEach(d=>ex.push({id:d.id,...d.data()}))}catch(e){}
+ try{const q=await getDocs(query(collection(fs,'marks'),where('cls','==',PGC)));q.forEach(d=>{const x=d.data();mk[x.eid+'_'+x.sid]=x})}catch(e){}
+ ex.sort((a,b)=>(a.date||'')<(b.date||'')?-1:1);const rows=STU.filter(s=>s.cls===PGC&&s.active!==false);
+ const avg=s=>{let a=0,n=0;ex.forEach(e=>{const x=mk[e.id+'_'+s.id];if(x&&!x.ab&&Number(x.max||e.max)>0){a+=Number(x.m)/Number(x.max||e.max);n++}});return n?Math.round(a*1000/n)/10:null};
+ window.__pg={ex,mk,rows,avg};
+ $('v').innerHTML=`<div class="chips">${CLASSES.map(c=>`<button class="${c===PGC?'on':''}" onclick="window.YX.pgc('${c}')">${c}</button>`).join('')}</div>
+ <div class="card" style="overflow-x:auto"><h2>${T('Progress Reports','முன்னேற்ற அறிக்கைகள்')} · ${T('Class','வகுப்பு')} ${PGC}</h2>`+(ex.length&&rows.length?`<table class="xt"><tr><th>${T('Student','மாணவர்')}</th>${ex.map(e=>`<th>${esc(e.name)}<br><small>${esc(e.subject||'')} /${e.max}</small></th>`).join('')}<th>${T('Avg %','சராசரி %')}</th></tr>`+rows.map(s=>{const a=avg(s);return `<tr><td>${esc(s.name)}</td>${ex.map(e=>{const x=mk[e.id+'_'+s.id];return `<td>${x?(x.ab?'A':esc(x.m)):'–'}</td>`}).join('')}<td><b>${a==null?'–':a}</b></td></tr>`}).join('')+`</table><div class="ab"><button class="btn sm" onclick="window.YX.pgX()">📗 ${T('Export Excel (.xlsx)','Excel ஏற்றுமதி (.xlsx)')}</button><button class="btn sm gr" onclick="window.YX.pgP()">📄 ${T('Export PDF','PDF ஏற்றுமதி')}</button></div><p class="mut">A = ${T('absent','வரவில்லை')}. ${T('Marks pending the owner\'s approval are visible to staff only.','உரிமையாளர் ஒப்புதல் நிலுவையில் உள்ள மதிப்பெண்கள் ஆசிரியர்களுக்கு மட்டுமே தெரியும்.')}</p>`:`<p class="mut">${T('No exams or students in this class yet. Create exams in the Exams tab.','இந்த வகுப்புக்கு தேர்வுகள் அல்லது மாணவர்கள் இல்லை. தேர்வுகள் பகுதியில் உருவாக்கவும்.')}</p>`)+'</div>';
+};
+const pgRows=()=>{const {ex,mk,rows,avg}=window.__pg;return [['Student'].concat(ex.map(e=>e.name+' ('+(e.subject||'')+' /'+e.max+')'),['Avg %'])].concat(rows.map(s=>[s.name].concat(ex.map(e=>{const x=mk[e.id+'_'+s.id];return x?(x.ab?'A':x.m):''}),[avg(s)==null?'':avg(s)])))};
+/* ---- alerts ---- */
+const alc=(ic,tx)=>`<div class="card"><b>${ic} ${tx}</b></div>`;
+V.alerts=async()=>{
+ if(ME.role==='parent')return parAlerts();
+ await loadLv();await loadHol();const pl=LV.filter(l=>l.status==='pending');
+ const pre=(await reqCard())+(await exCard())+(pl.length?alc('🌴',`${pl.length} ${T('leave request(s) waiting','விடுப்பு கோரிக்கை(கள்) நிலுவை')} <button class="btn sm" onclick="window.YX.tab('lv')">${T('Open','திற')}</button>`):'');
+ await V.nt();$('v').insertAdjacentHTML('afterbegin',pre||alc('✅',T('No pending actions.','நிலுவை நடவடிக்கை இல்லை.')));
+};
+async function parAlerts(){
+ await loadStu();await loadPar();let h='';const mon=today().slice(0,7);
+ try{const q=await getDocs(query(collection(fs,'att'),where('parentPhone','==',ME.phone)));const all=[];q.forEach(d=>all.push(d.data()));
+  STU.forEach(s=>{const r=all.find(x=>x.sid===s.id&&x.date===today());if(r&&r.st==='A')h+=alc('⚠️',`${esc(s.name)} ${T('is absent today.','இன்று வரவில்லை.')}`)})}catch(e){}
+ STU.forEach(s=>{const fee=Number(s.fee)||0,paid=PAYP.filter(p=>p.sid===s.id&&p.month===mon).reduce((a,p)=>a+p.amount,0);if(fee-paid>0)h+=alc('💰',`${esc(s.name)}: ${T('fee balance','கட்டண நிலுவை')} ${rs(fee-paid)}`)});
+ try{const q=await getDocs(query(collection(fs,'marks'),where('parentPhone','==',ME.phone),where('pub','==',true)));const mk=[];q.forEach(d=>mk.push(d.data()));mk.sort((a,b)=>(a.date||'')<(b.date||'')?1:-1);
+  if(mk.length)h+=`<div class="card"><h2>📝 ${T('Latest results','சமீபத்திய முடிவுகள்')}</h2>${mk.slice(0,6).map(x=>{const s=STU.find(z=>z.id===x.sid);return `<div class="row"><b>${esc(s?s.name:'')}<br><span class="mut">${esc(x.exam||'')} · ${esc(x.subject||'')}</span></b><span class="tag ok">${x.ab?'A':esc(x.m)+'/'+esc(x.max)}</span></div>`}).join('')}</div>`}catch(e){}
+ await loadNot();
+ h+=NOT.length?`<div class="card"><h2>📢 ${T('Notices','அறிவிப்புகள்')}</h2>${NOT.slice(0,15).map(n=>`<div class="row" style="display:block"><b>${esc(n.title)}</b> <span class="mut">${fmtD(n.date)}</span><br><span style="white-space:pre-wrap">${esc(n.body||'')}</span></div>`).join('')}</div>`:'';
+ $('v').innerHTML=h||alc('✅',T('No alerts right now.','இப்போது அறிவிப்புகள் இல்லை.'));
+}
+/* ---- settings ---- */
+V.settings=async()=>{
+ await loadSet();await loadCen();await loadUpi();const s=SET;
+ $('v').innerHTML=`<div id="m2"></div><div class="card"><h2>${T('Salary calculation method','சம்பளக் கணக்கீட்டு முறை')}</h2><p class="mut">${T('Daily salary = Monthly salary ÷ divisor. Finalized (locked) months never change.','ஒரு நாள் சம்பளம் = மாத சம்பளம் ÷ வகுப்பான். இறுதி செய்த (பூட்டிய) மாதங்கள் மாறாது.')}</p>
+ <select id="s_m" onchange="document.getElementById('s_dv').style.display=this.value==='custom'?'block':'none'"><option value="20" ${s.method==='20'?'selected':''}>${T('20 working days','20 வேலை நாட்கள்')}</option><option value="26" ${s.method==='26'?'selected':''}>${T('26 working days','26 வேலை நாட்கள்')}</option><option value="cal" ${s.method==='cal'?'selected':''}>${T('Actual working days of the month','அந்த மாதத்தின் உண்மையான வேலை நாட்கள்')}</option><option value="custom" ${s.method==='custom'?'selected':''}>${T('Custom divisor','தனிப்பயன் வகுப்பான்')}</option></select>
+ <input id="s_dv" inputmode="numeric" value="${s.div||26}" style="margin-top:6px;display:${s.method==='custom'?'block':'none'}">
+ <label>${T('Sundays','ஞாயிறுகள்')}</label><select id="s_s"><option value="work" ${s.sun==='work'?'selected':''}>${T('Working day unless declared a holiday','விடுமுறையாக அறிவிக்காவிட்டால் வேலை நாள்')}</option><option value="holiday" ${s.sun==='holiday'?'selected':''}>${T('Always a holiday','எப்போதும் விடுமுறை')}</option></select>
+ <button class="btn acc" onclick="window.YX.saveSet()">${T('Save settings','சேமி')}</button></div>
+ <div class="card"><h2>📍 ${T('Teacher check-in location','ஆசிரியர் வருகை இருப்பிடம்')}</h2><p class="mut">${CEN?T('Set','அமைக்கப்பட்டது')+' · '+T('radius','சுற்றளவு')+' '+CEN.radius+' m':T('Not set. Teachers can check in from anywhere until you set it.','அமைக்கப்படவில்லை. அமைக்கும் வரை ஆசிரியர் எங்கிருந்தும் வருகை குறிக்கலாம்.')}</p>
+ <label>${T('Allowed radius (metres)','அனுமதிக்கப்பட்ட சுற்றளவு (மீ)')}</label><input id="rad" inputmode="numeric" maxlength="4" value="${CEN?CEN.radius:100}"><button class="btn" onclick="window.YX.setCen()">${T('Set centre to my current location','என் தற்போதைய இடத்தை மையமாக அமை')}</button><p class="mut">${T('Do this while standing at the centre. Indoor GPS can be off by 20–50 m, so 100 m is recommended.','மையத்தில் நின்றபடி செய்யவும். உள்ளரங்கில் GPS 20–50 மீ தவறலாம்; 100 மீ பரிந்துரை.')}</p></div>
+ <div class="card"><h2>💳 ${T('UPI id for parents','பெற்றோருக்கான UPI id')}</h2><input id="upi" value="${esc(UPI)}" placeholder="name@bank"><button class="btn" onclick="window.YX.setUpi()">${T('Save UPI id','UPI id சேமி')}</button></div>
+ <div class="card"><h2>🗂️ ${T('Backup (monthly)','காப்புப் பிரதி (மாதம்)')}</h2><p class="mut">${T('The free plan has no automatic backup. Download this Excel once a month and keep it safe.','இலவசத் திட்டத்தில் தானியங்கி காப்புப் பிரதி இல்லை. மாதம் ஒருமுறை இந்த Excel-ஐ பதிவிறக்கி பத்திரமாக வைக்கவும்.')}</p><div class="ab"><button class="btn sm" onclick="window.YX.backup()">📗 ${T('Download all data (Excel)','அனைத்து தரவையும் பதிவிறக்கு (Excel)')}</button></div></div>
+ <div class="card"><h2>🌐 ${T('Language','மொழி')}</h2><button class="btn gr" onclick="window.YX.lang()">${L==='ta'?'Switch to English':'தமிழுக்கு மாறு'}</button></div>`;
+};
+async function saveSet(){const method=$('s_m').value,div=Math.max(1,Math.min(31,+$('s_dv').value||26)),sun=$('s_s').value;try{await setDoc(doc(fs,'meta','settings'),{method,div,sun,at:serverTimestamp()});SET={method,div,sun};m2(T('Saved.','சேமிக்கப்பட்டது.'),true)}catch(e){m2(errText(e))}}
+async function backup(){
+ try{const m=today().slice(0,7),s=await repData(m);
+  const us=await getDocs(collection(fs,'users')),u=[['Name','Role','Mobile','Active']];us.forEach(d=>{const x=d.data();u.push([x.name||'',x.role||'',x.phone||'',x.active===false?'No':'Yes'])});
+  const ps=await getDocs(collection(fs,'pay')),p=[['Student','Class','Month','Amount','Date']];ps.forEach(d=>{const x=d.data();p.push([x.name||'',x.cls||'',x.month||'',x.amount||0,x.date||''])});
+  const st=[['Student','Class','Parent','Parent mobile','Monthly fee','Active']];STU.forEach(x=>st.push([x.name,x.cls,x.parentName||'',x.parentPhone||'',x.fee||'',x.active===false?'No':'Yes']));
+  await dlX([{name:'Accounts',rows:u},{name:'Students',rows:st},{name:'Fee payments',rows:p}].concat(s),'YAxis_Backup_'+today())}catch(e){alert(errText(e))}
+}
 async function route(){
  const u=auth.currentUser;
  if(!u){TAB='home';CLS='';STU=[];ATT={};EXID='';return viewLogin()}
  if(!ME){ME=await loadMe(u)}
  if(!ME||ME.active!==true){const bad=ME;await signOut(auth);ME=null;await viewLogin();msg(bad?T('This account is switched off. Contact the owner.','இந்த கணக்கு நிறுத்தப்பட்டுள்ளது. உரிமையாளரைத் தொடர்புகொள்ளவும்.'):T('Account not found.','கணக்கு கிடைக்கவில்லை.'));return}
- if(!navItems().some(x=>x[0]===TAB)&&TAB!=='more')TAB='home';if(ME.role==='parent')TAB='home';
+ if(!navItems().some(x=>x[0]===TAB)&&TAB!=='more')TAB='home';
  viewHome();
 }
 window.YX={lang:()=>setLang(L==='ta'?'en':'ta'),setup:viewSetup,route,toggle,reset,tab:k=>{TAB=k;if(k==='ex')EXID='';viewHome()},cls:c=>{CLS=c;V.att()},mark,outAll,stuOff,pinFor,copyMsg,monCh,setFee,recPay,delPay,setUpi,addNt,delNt,setCen,saIn,saOut,addHol,delHol,addEx,exOpen,exBack,saveMk,pubEx};
+Object.assign(window.YX,{tab:k=>{TAB=k;SHEET=null;if(k==='ex')EXID='';viewHome()},atab:k=>{ATAB=k;V.att()},stuAtt:()=>{ATAB='s';TAB='att';viewHome()},rep,calM:k=>{CALM=addM(CALM||today().slice(0,7),k);CALD='';V.cal()},calD:d=>{CALD=d;V.cal()},reqLeave,lvDel,lvAct,lvTab:k=>{LTAB=k;V.lv()},manLeave,pm:k=>{PM=k;V.pay()},payApprove,payPaid,payReopen,payX,payP,sheetOpen:uid=>{TAB='pay';SHEET={uid,m:PM||pKeys()[0],edit:''};viewHome()},sheetBack:()=>{SHEET=null;V.pay()},sheetM:k=>{SHEET.m=k;PM=k;SHEET.edit='';V.pay()},sheetEdit:d=>{SHEET.edit=d;V.pay()},sheetSave,sheetDel,sheetP,setSal,pgc:c=>{PGC=c;V.pgrid()},pgX:()=>dlX([{name:'Class '+PGC,rows:pgRows()}],'YAxis_Progress_Class'+PGC),pgP:()=>printRep(T('Progress — Class ','முன்னேற்றம் — வகுப்பு ')+PGC,[{name:'Class '+PGC,rows:pgRows()}]),saveSet,backup});
 onAuthStateChanged(auth,async u=>{if(busy)return;ME=null;route()});
 </script></body></html>
