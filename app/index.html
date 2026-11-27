@@ -119,6 +119,8 @@ details.acd{background:#fff;border:1px solid #e6eaf3;border-radius:16px;margin:1
 .bnav .li svg{width:22px;height:22px}nav.side .li svg{width:18px;height:18px;margin-right:10px}nav.side button{display:flex!important;align-items:center}
 .qb .li svg{width:26px;height:26px}.mtile .li svg{width:26px;height:26px}.tile .ic .li svg{width:28px;height:28px;color:var(--pri)}
 .pinrow{display:flex;align-items:center;gap:12px;margin:4px 0 8px}.pinrow .btn{width:auto;margin:0}
+.stbk{border:1px dashed #cfd8ea;border-radius:12px;padding:8px 12px 12px;margin:10px 0;background:#fafcff}
+.sc2 .lb{background:#e8eefb;color:var(--pri)!important;font-weight:600}
 </style></head><body><div id="app"><p class="c mut">…</p></div>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
@@ -200,7 +202,7 @@ async function viewSetup(){
 async function loadMe(u){
  try{const s=await getDoc(doc(fs,'users',u.uid));return s.exists()?s.data():null}catch(e){return null}
 }
-const CLASSES=['LKG','UKG','1','2','3','4','5','6','7','8','9','10','11','12'];
+const CLASSES=['1','2','3','4','5','6','7','8','9','10','11','12'];
 const ist=()=>new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));
 const today=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
 const nowHM=()=>new Date().toLocaleTimeString('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit'});
@@ -1082,6 +1084,123 @@ function decoIcons(){
 }
 new MutationObserver(decoIcons).observe(document.body,{childList:true,subtree:true});
 setTimeout(()=>Object.assign(window.YX,{acat:k=>{ACAT=k;acForm()},newPin:()=>{ACPIN=genPin();const e=$('pinv');if(e)e.textContent=ACPIN},mkAcc,idPick:async i=>{const f=i.files[0];ACIMG='';if(!f){$('idp').innerHTML='';return}try{ACIMG=await readImg(f);$('idp').innerHTML=`<img src="${ACIMG}" style="max-width:160px;border-radius:10px;margin-top:6px">`}catch(e){m2(T('Could not read the photo.','புகைப்படத்தைப் படிக்க முடியவில்லை.'))}},stOff2:async(id,on)=>{try{await updateDoc(doc(fs,'students',id),{active:on});await stList()}catch(e){alert(errText(e))}},idView:id=>{const x=(window.__ids||[]).find(z=>z.id===id),b=$('iv_'+id);if(b)b.innerHTML=b.innerHTML?'':`<img src="${x.img}" style="max-width:100%;border-radius:10px;margin:6px 0">`}}),0);
+/* ---- stage 12: classes 1-12, multi-student parents, add student in Student Entry ---- */
+let ACREQ='',ACPRE=null,ACCUR=null;
+const stuRow=n=>`<div class="stbk"><b>${T('Student','மாணவர்')} ${n}</b><label>${T('Student name','மாணவர் பெயர்')}</label><input class="sn"><label>${T('Class','வகுப்பு')}</label><select class="sc">${CLASSES.map(c=>`<option>${c}</option>`).join('')}</select><label>${T('School (optional)','பள்ளி (விருப்பம்)')}</label><input class="ss"></div>`;
+acForm=function(){
+ const pinRow=`<label>${T('PIN (auto-generated)','PIN (தானாக உருவானது)')}</label><div class="pinrow"><b class="pin" id="pinv">${ACPIN}</b><button class="btn sm gr" onclick="window.YX.newPin()">🔄 ${T('New','புதிது')}</button></div>`;
+ const pre=ACCUR||{};
+ $('cform').innerHTML=(ACAT==='t'?
+  `<label>${T('Teacher name','ஆசிரியர் பெயர்')}</label><input id="nn"><label>${T('Teacher mobile number','ஆசிரியர் மொபைல் எண்')}</label><input id="np" inputmode="numeric" maxlength="10">`:
+  `${ACCUR?`<div class="msg okm">${T('Student already added: ','மாணவர் ஏற்கெனவே சேர்க்கப்பட்டவர்: ')}${esc(pre.studentName||'')} — ${T('only the parent login is needed. You may add more students below.','பெற்றோர் உள்நுழைவு மட்டும் தேவை. கூடுதல் மாணவர்களை கீழே சேர்க்கலாம்.')}</div>`:''}
+   <label>${T('Parent (father) name','பெற்றோர் (தந்தை) பெயர்')}</label><input id="spn" value="${esc(pre.parentName||'')}"><label>${T('Parent mobile number','பெற்றோர் மொபைல் எண்')}</label><input id="np" inputmode="numeric" maxlength="10" value="${esc(pre.phone||'')}">
+   <div id="stb">${ACCUR?'':stuRow(1)}</div><button class="btn gr" onclick="window.YX.addRow()">＋ ${T('Add another student (same account)','இன்னொரு மாணவரைச் சேர் (அதே கணக்கு)')}</button>`)+pinRow+
+  `<div id="m2"></div><button class="btn" id="mk" onclick="window.YX.mkAcc()">${T('Create account','கணக்கு உருவாக்கு')}</button><div id="out"></div>`;
+ $('ct_t').className=ACAT==='t'?'on':'';$('ct_p').className=ACAT==='p'?'on':'';
+};
+V.acc=async()=>{
+ ACCUR=ACREQ?ACPRE:null;ACREQ='';ACPIN=genPin();ACAT=ACCUR?'p':'t';
+ $('v').innerHTML=`<details class="acd" id="cra"><summary>➕ ${T('Create Account','கணக்கு உருவாக்கு')}</summary><div class="tabs"><button id="ct_t" onclick="window.YX.acat('t')">🧑‍🏫 ${T('Teacher','ஆசிரியர்')}</button><button id="ct_p" onclick="window.YX.acat('p')">👨‍👩‍👧 ${T('Parent (+ Add student)','பெற்றோர் (+ மாணவர் சேர்)')}</button></div><div id="cform"></div></details>
+ <details class="acd"><summary>✏️ ${T('Edit Accounts','கணக்குகளைத் திருத்து')}</summary><div id="ul" class="mut">…</div><h2 style="font-size:16px">${T('Students','மாணவர்கள்')}</h2><div id="sl"></div></details>`;
+ acForm();if(ACCUR)$('cra').open=true;listUsers();stList();pgTitle();
+};
+mkAcc=async function(){
+ const ph=$('np').value.trim();m2('');
+ if(!okPhone(ph))return m2(T('Enter a valid 10-digit mobile number.','சரியான 10 இலக்க மொபைல் எண்ணை உள்ளிடவும்.'));
+ if(ph===OWNER_PHONE)return m2(T('That is the owner number.','இது உரிமையாளர் எண்.'));
+ let name,rows=[];
+ if(ACAT==='t'){name=$('nn').value.trim();if(!name)return m2(T('Enter the name.','பெயரை உள்ளிடவும்.'))}
+ else{name=$('spn').value.trim()||T('Parent','பெற்றோர்');
+  rows=[...document.querySelectorAll('#stb .stbk')].map(b=>({name:b.querySelector('.sn').value.trim(),cls:b.querySelector('.sc').value,school:b.querySelector('.ss').value.trim()})).filter(x=>x.name);
+  if(!rows.length&&!ACCUR)return m2(T('Enter at least one student name.','குறைந்தது ஒரு மாணவர் பெயரை உள்ளிடவும்.'))}
+ $('mk').disabled=true;
+ try{
+  let pin=null,exists=false;
+  const us=await getDocs(collection(fs,'users'));us.forEach(d=>{const x=d.data();if(x.phone===ph&&x.active!==false)exists=true});
+  if(exists&&ACAT==='t')throw Object.assign(new Error('dup'),{code:'auth/email-already-in-use'});
+  if(!exists)pin=await mkUser(ph,name,ACAT==='t'?'teacher':'parent',1,ACPIN);
+  for(const r of rows)await setDoc(doc(collection(fs,'students')),{name:r.name,cls:r.cls,school:r.school,parentName:$('spn').value.trim(),parentPhone:ph,active:true,by:ME.name,at:serverTimestamp()});
+  if(ACCUR){try{await setDoc(doc(fs,'parentReq',ph),{phone:ph,parentName:ACCUR.parentName||'',studentName:ACCUR.studentName||'',status:'done',by:ME.name,at:serverTimestamp()})}catch(e){}}
+  const link='https://yaxistuition.com/app';
+  const sl=rows.map(r=>T('Student','மாணவர்')+': '+r.name+' ('+T('Class','வகுப்பு')+' '+r.cls+')').join('\n');
+  const msg=`Y Axis Tuition Centre\n${T('Login link','உள்நுழைவு இணைப்பு')}: ${link}\n${T('User name (mobile)','பயனர் பெயர் (மொபைல்)')}: ${ph}${pin?'\nPIN: '+pin:''}${sl?'\n'+sl:''}`.trim();
+  window.__msg=msg;
+  $('out').innerHTML=`<div class="msg okm"><b>${esc(ACAT==='t'?name:rows.map(r=>r.name).join(', ')||name)}</b> — ${T('saved','சேமிக்கப்பட்டது')}${rows.length?' · '+T('now also in Student Entry','மாணவர் பதிவிலும் சேர்ந்தது'):''}${pin?`<div class="pin">${pin}</div><span class="mut">${T('Shown only once. Share it now.','ஒருமுறை மட்டுமே காட்டப்படும். இப்போதே பகிரவும்.')}</span>`:`<br><span class="mut">${T('A login already exists for this number; the old PIN continues. Use New PIN in Edit Accounts if forgotten.','இந்த எண்ணுக்கு உள்நுழைவு ஏற்கெனவே உள்ளது; பழைய PIN தொடரும். மறந்தால் "கணக்குகளைத் திருத்து" பகுதியில் புதிய PIN.')}</span>`}
+   ${pin?`<a class="btn" style="display:block;text-align:center;text-decoration:none;margin-top:8px" target="_blank" rel="noopener" href="https://wa.me/91${ph}?text=${encodeURIComponent(msg)}">WhatsApp ${T('share','பகிர்')}</a><button class="btn gr" onclick="window.YX.copyMsg()">${T('Copy details','விவரங்களை நகலெடு')}</button>`:''}</div>`;
+  ACCUR=null;listUsers();stList();ACPIN=genPin();
+ }catch(e){m2((e.code||'').includes('email-already-in-use')?T('A login already exists for this number.','இந்த எண்ணுக்கு ஏற்கெனவே உள்நுழைவு உள்ளது.'):errText(e))}
+ const b=$('mk');if(b)b.disabled=false;
+};
+/* owner notification: teacher added a student -> open prefilled parent account form */
+reqCard=async function(){
+ let rows=[];
+ try{const q=await getDocs(collection(fs,'parentReq'));const us=await getDocs(collection(fs,'users'));const have=new Set();us.forEach(d=>{const x=d.data();if(x.role==='parent'&&x.active!==false)have.add(x.phone)});
+  PEND={};q.forEach(d=>{const x=d.data();if(x.status!=='pending')return;if(have.has(x.phone)){setDoc(doc(fs,'parentReq',x.phone),{...x,status:'done'}).catch(()=>{});return}rows.push(x);PEND[x.phone]=x})}catch(e){return ''}
+ if(!rows.length)return '';
+ return `<div class="card" style="border:2px solid var(--acc)"><h2>${T('New student — parent login needed','புதிய மாணவர் — பெற்றோர் உள்நுழைவு தேவை')} (${rows.length})</h2>
+ ${rows.map(x=>`<div class="row"><b>${esc(x.studentName||'')}<br><span class="mut">${esc(x.parentName||'')} ${esc(x.phone)} · ${T('added by','சேர்த்தவர்')} ${esc(x.by||'')}</span></b><button class="btn sm" onclick="window.YX.reqAcc('${x.phone}')">${T('Create account','கணக்கு உருவாக்கு')} →</button></div>`).join('')}</div>`;
+};
+/* --- student entry: add student (one at a time), parent contact, per-student buttons --- */
+const phLink=p=>p?`<a href="tel:${esc(p)}" style="color:var(--pri);font-weight:600">📞 ${esc(p)}</a>`:'';
+rosterHtml=function(){
+ const act=STU.filter(s=>s.active!==false),by={};act.forEach(s=>(by[s.cls]=by[s.cls]||[]).push(s));
+ const cl=CLASSES.filter(c=>by[c]);
+ const addb=`<button class="addb" onclick="window.YX.stAddOpen()">+ ${T('Add student','மாணவரைச் சேர்')}</button>`;
+ if(!cl.length)return addb+`<div class="card mut">${T('No students yet.','மாணவர் இல்லை.')}</div>`;
+ const tot=act.filter(s=>ATT[s.id]&&ATT[s.id].st==='P'&&!ATT[s.id].out).length;
+ return `<div class="card"><b style="color:var(--pri)">${T('Check-out for everyone','அனைவருக்கும் வெளியேறு')}</b><button class="btn" style="margin-top:8px" onclick="window.YX.stOutAll()">⏏ ${T('Check-out all classes (now)','அனைத்து வகுப்பும் வெளியே (இப்போது)')}</button><p class="mut" style="margin:8px 0 0">${T('Checks out every student who is checked in and not yet out; students with no check-in become Absent. Each class also has its own button.','உள்ளே வந்து இன்னும் வெளியேறாத அனைவரும் வெளியேறியதாகக் குறிக்கப்படுவர்; வருகை குறிக்காதவர்கள் வரவில்லை எனக் குறிக்கப்படுவர். ஒவ்வொரு வகுப்புக்கும் தனிப் பட்டனும் உண்டு.')} (${tot})</p></div>
+ <div class="cch">${cl.map(c=>`<button onclick="document.getElementById('cl_${c}').scrollIntoView({behavior:'smooth',block:'start'})">${T('Class','வகுப்பு')} ${c}</button>`).join('')}</div>${addb}`+
+ cl.map(c=>{const L2=by[c],inn=L2.filter(s=>ATT[s.id]&&ATT[s.id].st==='P').length;
+  return `<div class="cbar" id="cl_${c}"><span>${T('Class','வகுப்பு')} ${c} · ${inn}/${L2.length} ${T('in','உள்ளே')}</span><button class="btn sm" onclick="window.YX.stOutCls('${c}')">⏏ ${T('Check-out class','வகுப்பு வெளியே')}</button></div>`+
+  L2.map(s=>{const a=ATT[s.id];return `<div class="sc2"><div class="t1">${avt(s.name)}<div><b>${esc(s.name)}</b><span class="mut" style="font-size:12px">${esc(s.school||'')}${s.school&&s.parentName?' · ':''}${esc(s.parentName||'')} ${phLink(s.parentPhone)}</span></div></div><div class="t2">${stTag(a)}<button class="gb" onclick="window.YX.stMark('${s.id}','in')">✔ ${T('Check-in','வருகை')}</button><button class="rb" onclick="window.YX.stMark('${s.id}','abs')">✖ ${T('Absent','வரவில்லை')}</button>${a&&a.st==='P'&&!a.out?`<button class="ob" onclick="window.YX.stMark('${s.id}','out')">⏏ ${T('Check-out','வெளியே')}</button>`:''}</div>
+  <div class="t2"><button class="lb" onclick="window.YX.stProg('${s.cls}')">📈 ${T('Progress','முன்னேற்றம்')}</button><button class="lb" onclick="window.YX.tab('ex')">✏ ${T('Marks','மதிப்பெண்')}</button><button class="lb" onclick="window.YX.stAtt('${s.id}')">🗓 ${T('Attendance','வருகை')}</button></div><div id="sa_${s.id}"></div></div>`}).join('')}).join('');
+};
+V.stu=async()=>{
+ await loadStu();await loadAtt(today());
+ $('v').innerHTML=`<div id="sform"></div><div id="rost">${rosterHtml()}</div>`;pgTitle();
+ const h=document.querySelector('.pgt');if(h)h.textContent+=' · '+fmtD(today());
+};
+function stAddOpen(){
+ const f=$('sform');if(f.innerHTML){f.innerHTML='';return}
+ f.innerHTML=`<div class="card"><h2>${T('Add student','மாணவரைச் சேர்')}</h2><label>${T('Student name','மாணவர் பெயர்')}</label><input id="sn"><label>${T('Class','வகுப்பு')}</label><select id="sc">${CLASSES.map(c=>`<option>${c}</option>`).join('')}</select><label>${T('School (optional)','பள்ளி (விருப்பம்)')}</label><input id="ss"><label>${T('Parent name','பெற்றோர் பெயர்')}</label><input id="spn"><label>${T('Parent mobile number','பெற்றோர் மொபைல் எண்')}</label><input id="spp" inputmode="numeric" maxlength="10"><div id="m2"></div><button class="btn" id="sadd" onclick="window.YX.stuAdd()">${T('Save student','மாணவரைச் சேமி')}</button><div id="sout"></div></div>`;
+ f.scrollIntoView({behavior:'smooth'});
+}
+async function stuAdd(){
+ const name=$('sn').value.trim(),cls=$('sc').value,school=$('ss').value.trim(),pn=$('spn').value.trim(),pp=$('spp').value.trim();
+ if(!name)return m2(T('Enter the student name.','மாணவர் பெயரை உள்ளிடவும்.'));
+ if(!okPhone(pp))return m2(T('Enter a valid 10-digit parent mobile number.','சரியான 10 இலக்க பெற்றோர் மொபைல் எண்ணை உள்ளிடவும்.'));
+ $('sadd').disabled=true;
+ try{
+  await setDoc(doc(collection(fs,'students')),{name,cls,school,parentName:pn,parentPhone:pp,active:true,by:ME.name,at:serverTimestamp()});
+  let msg=T('Student saved.','மாணவர் சேமிக்கப்பட்டது.');
+  if(ME.role==='teacher'){await ensureParentReq(pp,pn,name);msg+=' '+T('The owner will be notified to create the parent login.','பெற்றோர் உள்நுழைவு உருவாக்க உரிமையாளருக்குத் தெரிவிக்கப்படும்.')}
+  await loadStu();await loadAtt(today());rerost();
+  $('sn').value='';$('ss').value='';m2(msg,true);$('sadd').disabled=false;
+  if(ME.role==='owner'){
+   const us=await getDocs(collection(fs,'users'));let has=false;us.forEach(d=>{const x=d.data();if(x.phone===pp&&x.role==='parent'&&x.active!==false)has=true});
+   if(!has){PEND[pp]={phone:pp,parentName:pn,studentName:name};$('sout').innerHTML=`<button class="btn" onclick="window.YX.reqAcc('${pp}')">${T('Create parent account','பெற்றோர் கணக்கு உருவாக்கு')} →</button>`}
+   else $('sout').innerHTML=`<div class="msg okm">${T('A parent login already exists for ','இந்த எண்ணுக்கு பெற்றோர் உள்நுழைவு ஏற்கெனவே உள்ளது: ')}${esc(pp)}</div>`;
+  }
+ }catch(e){m2(errText(e));$('sadd').disabled=false}
+}
+async function stAtt(id){
+ const b=$('sa_'+id);if(!b)return;if(b.innerHTML){b.innerHTML='';return}b.innerHTML='…';
+ try{const q=await getDocs(query(collection(fs,'att'),where('sid','==',id)));const r=[];q.forEach(d=>r.push(d.data()));r.sort((a,c)=>a.date<c.date?1:-1);
+  const mon=today().slice(0,7),mr=r.filter(x=>x.date.startsWith(mon)),P=mr.filter(x=>x.st==='P').length,A=mr.filter(x=>x.st==='A').length;
+  b.innerHTML=`<div style="margin-top:8px"><b>${T('This month','இந்த மாதம்')}: ${P} ${T('present','வருகை')} · ${A} ${T('absent','வரவில்லை')}</b><div style="margin-top:6px">${r.slice(0,31).map(x=>`<span class="tag ${x.st==='P'?'ok':'off'}" style="margin:2px;display:inline-block">${fmtD(x.date).slice(0,5)} ${x.st}${x.in?' '+x.in:''}</span>`).join('')||`<span class="mut">${T('No records yet.','பதிவுகள் இல்லை.')}</span>`}</div></div>`}catch(e){b.textContent=errText(e)}
+}
+async function stOut2(list){
+ const act=list.filter(s=>s.active!==false);if(!act.length)return;
+ if(!confirm(T('Check out these students now? Students with no check-in will be marked Absent.','இந்த மாணவர்களை இப்போது வெளியேற்றவா? வருகை குறிக்காதவர்கள் வரவில்லை எனக் குறிக்கப்படுவர்.')))return;
+ try{const t=nowHM();let n=0;
+  for(const s of act){const a=ATT[s.id];let rec=null;
+   if(!a)rec={sid:s.id,date:today(),parentPhone:s.parentPhone,by:ME.name,st:'A',in:null,out:null};
+   else if(a.st==='P'&&!a.out)rec={...a,out:t};
+   if(rec){await setDoc(doc(fs,'att',today()+'_'+s.id),rec);ATT[s.id]=rec;n++}}
+  rerost();if(!n)alert(T('Nothing to update.','மாற்ற எதுவும் இல்லை.'))}catch(e){alert(errText(e))}
+}
+const stOutAll2=()=>stOut2(STU),stOutCls2=c=>stOut2(STU.filter(s=>s.cls===c));
+setTimeout(()=>Object.assign(window.YX,{addRow:()=>{const b=$('stb');b.insertAdjacentHTML('beforeend',stuRow(b.children.length+1))},reqAcc:ph=>{ACREQ=ph;ACPRE=PEND[ph]||{phone:ph};TAB='acc';SHEET=null;viewHome()},stAddOpen,stuAdd,stAtt,stProg:c=>{PGC=c;TAB='pgrid';SHEET=null;viewHome()},stOutAll:stOutAll2,stOutCls:stOutCls2}),0);
 async function route(){
  const u=auth.currentUser;
  if(!u){TAB='home';CLS='';STU=[];ATT={};EXID='';return viewLogin()}
