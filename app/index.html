@@ -19,11 +19,15 @@ input,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:
 .tag{font-size:11px;padding:2px 8px;border-radius:99px;background:#e8ecf5;color:var(--pri)}.tag.off{background:#fdecec;color:#9b1c1c}
 .mut{color:var(--mut);font-size:13px}.lang{float:right;font-size:13px;color:var(--pri);background:none;border:0;cursor:pointer}
 .pin{font-size:26px;letter-spacing:4px;font-weight:700;color:var(--pri);text-align:center;padding:8px}
+.tabs{display:flex;gap:6px;margin:10px 0;overflow-x:auto}.tabs button{flex:1;white-space:nowrap;border:0;background:#e3e8f3;color:var(--pri);padding:9px 10px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}.tabs button.on{background:var(--pri);color:#fff}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center}.stats b{display:block;font-size:20px;color:var(--pri)}.stats span{font-size:11px;color:var(--mut)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}.chips button{border:0;background:#e8ecf5;color:var(--pri);padding:6px 10px;border-radius:99px;font-size:13px;cursor:pointer}.chips button.on{background:var(--pri);color:#fff}
+.arow{padding:10px 0;border-top:1px solid var(--line)}.arow:first-of-type{border-top:0}.ab{display:flex;gap:6px;margin-top:6px}.tag.ok{background:#e7f6e8;color:#14611a}
 </style></head><body><div class="wrap" id="app"><p class="c mut">…</p></div>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {getAuth,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import {getFirestore,doc,getDoc,setDoc,collection,getDocs,updateDoc,writeBatch,serverTimestamp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import {getFirestore,doc,getDoc,setDoc,collection,getDocs,updateDoc,writeBatch,serverTimestamp,query,where} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 const cfg={apiKey:"AIzaSyBbXwXd4lZh4iRUH2UGYWVpunrGOEt89JA",authDomain:"yaxis-tuition-ac94f.firebaseapp.com",projectId:"yaxis-tuition-ac94f",storageBucket:"yaxis-tuition-ac94f.firebasestorage.app",messagingSenderId:"1005729199924",appId:"1:1005729199924:web:16a9ea9403fa30fe649761"};
 const app=initializeApp(cfg),auth=getAuth(app),fs=getFirestore(app);
@@ -100,21 +104,121 @@ async function viewSetup(){
 async function loadMe(u){
  try{const s=await getDoc(doc(fs,'users',u.uid));return s.exists()?s.data():null}catch(e){return null}
 }
+const CLASSES=['LKG','UKG','1','2','3','4','5','6','7','8','9','10','11','12'];
+const ist=()=>new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));
+const today=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
+const nowHM=()=>new Date().toLocaleTimeString('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit'});
+const isStaff=()=>ME&&(ME.role==='owner'||ME.role==='teacher');
+let TAB='home',CLS='',STU=[],ATT={};
+async function loadStu(){
+ const q=isStaff()?collection(fs,'students'):query(collection(fs,'students'),where('parentPhone','==',ME.phone));
+ const s=await getDocs(q);STU=[];s.forEach(d=>STU.push({id:d.id,...d.data()}));
+ STU.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+}
+async function loadAtt(date){
+ const s=await getDocs(query(collection(fs,'att'),where('date','==',date)));ATT={};s.forEach(d=>{const x=d.data();ATT[x.sid]=x});
+}
+function nav(){
+ const tabs=ME.role==='parent'?[['home',T('Home','முகப்பு')]]:[['home',T('Home','முகப்பு')],['stu',T('Students','மாணவர்கள்')],['att',T('Attendance','வருகை')]];
+ if(ME.role==='owner')tabs.push(['acc',T('Accounts','கணக்குகள்')]);
+ return `<div class="tabs">${tabs.map(([k,l])=>`<button class="${k===TAB?'on':''}" onclick="window.YX.tab('${k}')">${l}</button>`).join('')}</div>`;
+}
+const V={};
 async function viewHome(){
- const r=ME.role;
- let h=`<div class="card"><h2>${T('Welcome','வணக்கம்')}, ${esc(ME.name||'')}</h2><p class="mut">${esc(ME.phone)} · <span class="tag">${r==='owner'?T('Owner','உரிமையாளர்'):r==='teacher'?T('Teacher','ஆசிரியர்'):T('Parent','பெற்றோர்')}</span></p>
- <p class="mut">${T('Sign-in works. The full app screens are being added stage by stage.','உள்நுழைவு செயல்படுகிறது. முழு ஆப் திரைகள் கட்டம் கட்டமாகச் சேர்க்கப்படுகின்றன.')}</p></div>`;
- if(r==='owner')h+=`<div class="card"><h2>${T('Create account','கணக்கு உருவாக்கு')}</h2>
+ $('app').innerHTML=shell(nav()+`<div id="v"><p class="mut c">…</p></div><button class="btn gr" id="so">${T('Sign out','வெளியேறு')}</button>`);
+ $('so').onclick=()=>signOut(auth);
+ try{await V[TAB]()}catch(e){$('v').innerHTML=`<div class="msg err">${esc(errText(e))}</div>`}
+}
+const roleName=r=>r==='owner'?T('Owner','உரிமையாளர்'):r==='teacher'?T('Teacher','ஆசிரியர்'):T('Parent','பெற்றோர்');
+const stTag=a=>!a?`<span class="tag">${T('Not marked','குறிக்கவில்லை')}</span>`:a.st==='A'?`<span class="tag off">${T('Absent','வரவில்லை')}</span>`:`<span class="tag ok">${T('Present','வந்தார்')}${a.in?' '+a.in:''}${a.out?' → '+a.out:''}</span>`;
+const fmtD=d=>{const [y,m,dd]=d.split('-');return dd+'-'+m+'-'+y};
+V.home=async()=>{
+ let h=`<div class="card"><h2>${T('Welcome','வணக்கம்')}, ${esc(ME.name||'')}</h2><p class="mut">${esc(ME.phone)} · <span class="tag">${roleName(ME.role)}</span></p></div>`;
+ await loadStu();
+ if(isStaff()){
+  await loadAtt(today());const act=STU.filter(s=>s.active!==false);
+  const p=act.filter(s=>ATT[s.id]&&ATT[s.id].st==='P').length,a=act.filter(s=>ATT[s.id]&&ATT[s.id].st==='A').length;
+  h+=`<div class="card"><h2>${T('Today','இன்று')} · ${fmtD(today())}</h2><div class="stats"><div><b>${act.length}</b><span>${T('Students','மாணவர்கள்')}</span></div><div><b>${p}</b><span>${T('Present','வந்தனர்')}</span></div><div><b>${a}</b><span>${T('Absent','வரவில்லை')}</span></div><div><b>${act.length-p-a}</b><span>${T('Not marked','குறிக்கவில்லை')}</span></div></div></div>`;
+ }else{
+  if(!STU.length)h+=`<div class="card mut">${T('No student is linked to your mobile number yet. Please contact the centre.','உங்கள் மொபைல் எண்ணுடன் மாணவர் இணைக்கப்படவில்லை. மையத்தைத் தொடர்புகொள்ளவும்.')}</div>`;
+  const q=await getDocs(query(collection(fs,'att'),where('parentPhone','==',ME.phone)));const all=[];q.forEach(d=>all.push(d.data()));
+  for(const s of STU){
+   const rec=all.filter(x=>x.sid===s.id).sort((a,b)=>b.date<a.date?-1:1);
+   const todayRec=rec.find(x=>x.date===today());
+   const mon=today().slice(0,7),mr=rec.filter(x=>x.date.startsWith(mon));
+   const P=mr.filter(x=>x.st==='P').length,A=mr.filter(x=>x.st==='A').length;
+   h+=`<div class="card"><h2>${esc(s.name)} <span class="tag">${T('Class','வகுப்பு')} ${esc(s.cls)}</span></h2>
+   <p>${T('Today','இன்று')}: ${stTag(todayRec)}</p>
+   <p class="mut">${T('This month','இந்த மாதம்')}: ${P} ${T('present','வருகை')} · ${A} ${T('absent','வரவில்லை')}</p>
+   <h2 style="margin-top:12px">${T('Attendance report','வருகை அறிக்கை')}</h2>
+   ${rec.slice(0,31).map(x=>`<div class="row"><b>${fmtD(x.date)}</b>${stTag(x)}</div>`).join('')||`<p class="mut">${T('No records yet.','பதிவுகள் இல்லை.')}</p>`}</div>`;
+  }
+ }
+ $('v').innerHTML=h;
+};
+V.stu=async()=>{
+ await loadStu();
+ const list=STU.filter(s=>!CLS||s.cls===CLS);
+ let h=`<div class="card"><h2>${T('Add student','மாணவரைச் சேர்')}</h2>
+ <label>${T('Student name','மாணவர் பெயர்')}</label><input id="sn">
+ <label>${T('Class','வகுப்பு')}</label><select id="sc">${CLASSES.map(c=>`<option>${c}</option>`).join('')}</select>
+ <label>${T('Parent name','பெற்றோர் பெயர்')}</label><input id="spn">
+ <label>${T('Parent mobile number','பெற்றோர் மொபைல் எண்')}</label><input id="spp" inputmode="numeric" maxlength="10">
+ <div id="m2"></div><button class="btn" id="sadd">${T('Save student','மாணவரைச் சேமி')}</button></div>
+ <div class="card"><h2>${T('Students','மாணவர்கள்')} (${list.length})</h2>
+ <select id="sf"><option value="">${T('All classes','எல்லா வகுப்பும்')}</option>${CLASSES.map(c=>`<option ${c===CLS?'selected':''}>${c}</option>`).join('')}</select>
+ ${list.map(s=>`<div class="row"><b>${esc(s.name)}<br><span class="mut">${T('Class','வகுப்பு')} ${esc(s.cls)} · ${esc(s.parentName||'')} ${esc(s.parentPhone||'')}</span></b>${s.active===false?`<span class="tag off">${T('Off','நிறுத்தம்')}</span>`:''}${ME.role==='owner'?`<button class="btn sm gr" onclick="window.YX.stuOff('${s.id}',${s.active===false})">${s.active===false?T('Activate','இயக்கு'):T('Deactivate','நிறுத்து')}</button>`:''}</div>`).join('')||`<p class="mut">-</p>`}</div>`;
+ $('v').innerHTML=h;
+ $('sf').onchange=e=>{CLS=e.target.value;V.stu()};
+ $('sadd').onclick=addStu;
+};
+async function addStu(){
+ const name=$('sn').value.trim(),cls=$('sc').value,pn=$('spn').value.trim(),pp=$('spp').value.trim();
+ if(!name)return m2(T('Enter the student name.','மாணவர் பெயரை உள்ளிடவும்.'));
+ if(!okPhone(pp))return m2(T('Enter a valid 10-digit parent mobile number.','சரியான 10 இலக்க பெற்றோர் மொபைல் எண்ணை உள்ளிடவும்.'));
+ $('sadd').disabled=true;
+ try{await setDoc(doc(collection(fs,'students')),{name,cls,parentName:pn,parentPhone:pp,active:true,by:ME.name,at:serverTimestamp()});CLS=cls;await V.stu();m2(T('Student saved.','மாணவர் சேமிக்கப்பட்டார்.'),true)}
+ catch(e){m2(errText(e));$('sadd').disabled=false}
+}
+V.att=async()=>{
+ await loadStu();await loadAtt(today());
+ if(!CLS)CLS=CLASSES[0];
+ const rows=STU.filter(s=>s.cls===CLS&&s.active!==false);
+ $('v').innerHTML=`<div class="card"><h2>${T('Attendance','வருகை')} · ${fmtD(today())}</h2>
+ <div class="chips">${CLASSES.map(c=>`<button class="${c===CLS?'on':''}" onclick="window.YX.cls('${c}')">${c}</button>`).join('')}</div>
+ <div id="m2"></div>
+ ${rows.map(s=>{const a=ATT[s.id];return `<div class="arow"><div class="an"><b>${esc(s.name)}</b><div>${stTag(a)}</div></div>
+ <div class="ab"><button class="btn sm" onclick="window.YX.mark('${s.id}','in')">${T('Check-in','வருகை')}</button>
+ <button class="btn sm bad" onclick="window.YX.mark('${s.id}','abs')">${T('Absent','வரவில்லை')}</button>
+ <button class="btn sm gr" onclick="window.YX.mark('${s.id}','out')">${T('Check-out','வெளியே')}</button></div></div>`}).join('')||`<p class="mut">${T('No students in this class.','இந்த வகுப்பில் மாணவர் இல்லை.')}</p>`}
+ ${rows.length?`<button class="btn gr" onclick="window.YX.outAll()">${T('Check-out whole class','வகுப்பு முழுவதும் வெளியே')}</button>`:''}</div>`;
+};
+async function mark(sid,kind){
+ const s=STU.find(x=>x.id===sid);if(!s)return;const cur=ATT[sid]||{};
+ let d;
+ if(kind==='in')d={st:'P',in:nowHM(),out:null};
+ else if(kind==='abs')d={st:'A',in:null,out:null};
+ else{if(cur.st!=='P')return m2(T('Mark check-in first.','முதலில் வருகையைக் குறிக்கவும்.'));d={st:'P',in:cur.in||null,out:nowHM()}}
+ try{
+  const rec={sid,date:today(),parentPhone:s.parentPhone,by:ME.name,...d};
+  await setDoc(doc(fs,'att',today()+'_'+sid),rec);ATT[sid]=rec;await V.att();
+ }catch(e){m2(errText(e))}
+}
+async function outAll(){
+ const rows=STU.filter(s=>s.cls===CLS&&s.active!==false&&ATT[s.id]&&ATT[s.id].st==='P'&&!ATT[s.id].out);
+ if(!rows.length)return m2(T('Nobody to check out.','வெளியே அனுப்ப யாரும் இல்லை.'));
+ try{const t=nowHM();for(const s of rows){const rec={...ATT[s.id],out:t};await setDoc(doc(fs,'att',today()+'_'+s.id),rec);ATT[s.id]=rec}await V.att()}catch(e){m2(errText(e))}
+}
+async function stuOff(id,on){try{await updateDoc(doc(fs,'students',id),{active:on});await V.stu()}catch(e){m2(errText(e))}}
+V.acc=async()=>{
+ $('v').innerHTML=`<div class="card"><h2>${T('Create account','கணக்கு உருவாக்கு')}</h2>
   <label>${T('Name','பெயர்')}</label><input id="nn">
   <label>${T('Role','பங்கு')}</label><select id="rl"><option value="teacher">${T('Teacher','ஆசிரியர்')}</option><option value="parent">${T('Parent','பெற்றோர்')}</option></select>
   <label>${T('Mobile number (login id)','மொபைல் எண் (உள்நுழைவு)')}</label><input id="np" inputmode="numeric" maxlength="10">
   <div id="m2"></div><button class="btn" id="mk">${T('Generate PIN & create','PIN உருவாக்கி கணக்கு அமை')}</button><div id="out"></div></div>
   <div class="card"><h2>${T('Accounts','கணக்குகள்')}</h2><div id="ul" class="mut">…</div></div>`;
- h+=`<button class="btn gr" id="so">${T('Sign out','வெளியேறு')}</button>`;
- $('app').innerHTML=shell(h);
- $('so').onclick=()=>signOut(auth);
- if(r==='owner'){$('mk').onclick=mkAccount;listUsers()}
-}
+ $('mk').onclick=mkAccount;listUsers();
+};
 function m2(t,ok){$('m2').innerHTML=t?`<div class="msg ${ok?'okm':'err'}">${esc(t)}</div>`:''}
 async function mkUser(ph,name,role,v){
  // secondary app instance so the owner stays signed in
@@ -161,11 +265,12 @@ async function reset(id){
 }
 async function route(){
  const u=auth.currentUser;
- if(!u)return viewLogin();
+ if(!u){TAB='home';CLS='';STU=[];ATT={};return viewLogin()}
  if(!ME){ME=await loadMe(u)}
  if(!ME||ME.active!==true){const bad=ME;await signOut(auth);ME=null;await viewLogin();msg(bad?T('This account is switched off. Contact the owner.','இந்த கணக்கு நிறுத்தப்பட்டுள்ளது. உரிமையாளரைத் தொடர்புகொள்ளவும்.'):T('Account not found.','கணக்கு கிடைக்கவில்லை.'));return}
+ if(ME.role==='parent'||(TAB==='acc'&&ME.role!=='owner'))TAB='home';
  viewHome();
 }
-window.YX={lang:()=>setLang(L==='ta'?'en':'ta'),setup:viewSetup,route,toggle,reset};
+window.YX={lang:()=>setLang(L==='ta'?'en':'ta'),setup:viewSetup,route,toggle,reset,tab:k=>{TAB=k;viewHome()},cls:c=>{CLS=c;V.att()},mark,outAll,stuOff};
 onAuthStateChanged(auth,async u=>{if(busy)return;ME=null;route()});
 </script></body></html>
