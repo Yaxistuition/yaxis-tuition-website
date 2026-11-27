@@ -115,6 +115,10 @@ details.acd{background:#fff;border:1px solid #e6eaf3;border-radius:16px;margin:1
 .hcp{background:rgba(255,255,255,.15);border-radius:10px;padding:7px 10px;margin:10px 0;font-size:13px;display:inline-block}.hst{display:flex;gap:8px;margin-top:6px;padding-right:0}.hst div{flex:1;background:rgba(255,255,255,.14);border-radius:12px;padding:8px;text-align:center}.hst b{display:block;font-size:19px}.hst span{font-size:11px;opacity:.85}
 @media(min-width:900px){.mchips{grid-template-columns:repeat(6,1fr)}.cch{grid-template-columns:repeat(7,1fr)}.hero2 .hst{max-width:60%}}
 @media(max-width:899px){#nl-badge-frame{bottom:78px!important}}
+.li{display:inline-flex;vertical-align:middle}.li svg{width:1.2em;height:1.2em}.li.o{color:#d9822b}.li.g{color:#1B8F1E}
+.bnav .li svg{width:22px;height:22px}nav.side .li svg{width:18px;height:18px;margin-right:10px}nav.side button{display:flex!important;align-items:center}
+.qb .li svg{width:26px;height:26px}.mtile .li svg{width:26px;height:26px}.tile .ic .li svg{width:28px;height:28px;color:var(--pri)}
+.pinrow{display:flex;align-items:center;gap:12px;margin:4px 0 8px}.pinrow .btn{width:auto;margin:0}
 </style></head><body><div id="app"><p class="c mut">…</p></div>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
@@ -993,6 +997,91 @@ V.home=async()=>{
 /* --- titles on every page --- */
 Object.keys(V).forEach(k=>{const f=V[k];if(k==='nt'||k==='more')return;V[k]=async(...a)=>{const r=await f(...a);if(k===TAB)pgTitle();return r}});
 setTimeout(()=>Object.assign(window.YX,{attM:k=>{attM.v=k;V.att()},attX:()=>dlX([{name:'Student attendance',rows:AGR.rows}],'YAxis_Attendance_'+AGR.m),attP:()=>printRep(T('Student attendance — ','மாணவர் வருகை — ')+mLab(AGR.m),[{name:T('Student attendance','மாணவர் வருகை'),rows:AGR.rows}]),stMark,stOutAll,stOutCls,lvF:k=>{LF=k;V.lv()},lvAct2}),0);
+/* ---- stage 11: account creation hub, simple icons ---- */
+const genPin=()=>String(Math.floor(100000+Math.random()*900000));
+mkUser=async function(ph,name,role,v,pin0){
+ const sec=initializeApp(cfg,'sec'+Date.now()),sa=getAuth(sec),pin=pin0||genPin();
+ try{const c=await createUserWithEmailAndPassword(sa,mail(ph,v),pass(pin));await setDoc(doc(fs,'users',c.user.uid),{role,name,phone:ph,active:true,v,at:serverTimestamp()});return pin}
+ finally{try{await signOut(sa)}catch(e){}}
+};
+let ACAT='t',ACPIN='',ACIMG='';
+function readImg(f){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,900/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',0.6))};im.onerror=rej;im.src=fr.result};fr.onerror=rej;fr.readAsDataURL(f)})}
+function acForm(){
+ const pinRow=`<label>${T('PIN (auto-generated)','PIN (தானாக உருவானது)')}</label><div class="pinrow"><b class="pin" id="pinv">${ACPIN}</b><button class="btn sm gr" onclick="window.YX.newPin()">🔄 ${T('New','புதிது')}</button></div>`;
+ $('cform').innerHTML=(ACAT==='t'?
+  `<label>${T('Teacher name','ஆசிரியர் பெயர்')}</label><input id="nn"><label>${T('Teacher mobile number','ஆசிரியர் மொபைல் எண்')}</label><input id="np" inputmode="numeric" maxlength="10">
+   <label>${T('ID proof photo (Aadhaar / any ID) — optional','அடையாளச் சான்று புகைப்படம் (ஆதார் / ஏதேனும் ஒன்று) — விருப்பம்')}</label><input id="idf" type="file" accept="image/*" onchange="window.YX.idPick(this)"><div id="idp"></div>`:
+  `<label>${T('Student name','மாணவர் பெயர்')}</label><input id="sn"><label>${T('Class','வகுப்பு')}</label><select id="sc">${CLASSES.map(c=>`<option>${c}</option>`).join('')}</select>
+   <label>${T('Parent (father) name','பெற்றோர் (தந்தை) பெயர்')}</label><input id="spn"><label>${T('Parent mobile number','பெற்றோர் மொபைல் எண்')}</label><input id="np" inputmode="numeric" maxlength="10">`)+pinRow+
+  `<div id="m2"></div><button class="btn" id="mk" onclick="window.YX.mkAcc()">${T('Create account','கணக்கு உருவாக்கு')}</button><div id="out"></div>`;
+ $('ct_t').className=ACAT==='t'?'on':'';$('ct_p').className=ACAT==='p'?'on':'';
+}
+async function stList(){
+ await loadStu();const b=$('sl');if(!b)return;
+ b.innerHTML=STU.map(s=>`<div class="row"><b>${esc(s.name)}<br><span class="mut">${T('Class','வகுப்பு')} ${esc(s.cls)} · ${esc(s.parentName||'')} ${esc(s.parentPhone||'')}</span></b>${s.active===false?`<span class="tag off">${T('Off','நிறுத்தம்')}</span>`:''}<button class="btn sm gr" onclick="window.YX.stOff2('${s.id}',${s.active===false})">${s.active===false?T('Activate','இயக்கு'):T('Deactivate','நிறுத்து')}</button></div>`).join('')||`<p class="mut">-</p>`;
+}
+async function idList(){
+ const b=$('il');if(!b)return;
+ try{const q=await getDocs(collection(fs,'idproof'));const r=[];q.forEach(d=>r.push({id:d.id,...d.data()}));
+  b.innerHTML=r.map(x=>`<div class="row"><b>${esc(x.name||'')}<br><span class="mut">${esc(x.phone||x.id)}</span></b><button class="btn sm gr" onclick="window.YX.idView('${x.id}')">${T('View','பார்')}</button></div><div id="iv_${x.id}"></div>`).join('')||`<p class="mut">${T('No ID photos saved.','ID புகைப்படம் இல்லை.')}</p>`;window.__ids=r}catch(e){b.textContent=errText(e)}
+}
+V.acc=async()=>{
+ ACPIN=genPin();ACAT='t';ACIMG='';
+ $('v').innerHTML=`<details class="acd" id="cra"><summary>➕ ${T('Create Account','கணக்கு உருவாக்கு')}</summary><div class="tabs"><button id="ct_t" onclick="window.YX.acat('t')">🧑‍🏫 ${T('Teacher','ஆசிரியர்')}</button><button id="ct_p" onclick="window.YX.acat('p')">👨‍👩‍👧 ${T('Parent (+ Add student)','பெற்றோர் (+ மாணவர் சேர்)')}</button></div><div id="cform"></div></details>
+ <details class="acd"><summary>✏️ ${T('Edit Accounts','கணக்குகளைத் திருத்து')}</summary><div id="ul" class="mut">…</div><h2 style="font-size:16px">${T('Students','மாணவர்கள்')}</h2><div id="sl"></div><h2 style="font-size:16px">${T('ID proofs','அடையாளச் சான்றுகள்')}</h2><div id="il"></div></details>`;
+ acForm();listUsers();stList();idList();pgTitle();
+};
+async function mkAcc(){
+ const ph=$('np').value.trim();m2('');
+ if(!okPhone(ph))return m2(T('Enter a valid 10-digit mobile number.','சரியான 10 இலக்க மொபைல் எண்ணை உள்ளிடவும்.'));
+ if(ph===OWNER_PHONE)return m2(T('That is the owner number.','இது உரிமையாளர் எண்.'));
+ let name,stu=null;
+ if(ACAT==='t'){name=$('nn').value.trim();if(!name)return m2(T('Enter the name.','பெயரை உள்ளிடவும்.'))}
+ else{const sn=$('sn').value.trim();if(!sn)return m2(T('Enter the student name.','மாணவர் பெயரை உள்ளிடவும்.'));name=$('spn').value.trim()||T('Parent','பெற்றோர்');stu={name:sn,cls:$('sc').value}}
+ $('mk').disabled=true;
+ try{
+  let pin=null,exists=false;
+  const us=await getDocs(collection(fs,'users'));us.forEach(d=>{const x=d.data();if(x.phone===ph&&x.active!==false)exists=true});
+  if(exists&&ACAT==='t')throw Object.assign(new Error('dup'),{code:'auth/email-already-in-use'});
+  if(!exists)pin=await mkUser(ph,name,ACAT==='t'?'teacher':'parent',1,ACPIN);
+  if(ACAT==='t'&&ACIMG){try{await setDoc(doc(fs,'idproof',ph),{phone:ph,name,img:ACIMG,at:serverTimestamp()})}catch(e){m2(T('Account created, but the ID photo could not be saved: ','கணக்கு உருவானது, ஆனால் ID புகைப்படம் சேமிக்க முடியவில்லை: ')+errText(e))}}
+  if(stu){await setDoc(doc(collection(fs,'students')),{name:stu.name,cls:stu.cls,parentName:ACAT==='p'?$('spn').value.trim():'',parentPhone:ph,active:true,by:ME.name,at:serverTimestamp()})}
+  const link='https://yaxistuition.com/app';
+  const msg=`Y Axis Tuition Centre\n${T('Login link','உள்நுழைவு இணைப்பு')}: ${link}\n${T('User name (mobile)','பயனர் பெயர் (மொபைல்)')}: ${ph}\n${pin?'PIN: '+pin:''}${stu?'\n'+T('Student','மாணவர்')+': '+stu.name+' ('+T('Class','வகுப்பு')+' '+stu.cls+')':''}`.trim();
+  window.__msg=msg;
+  $('out').innerHTML=`<div class="msg okm"><b>${esc(ACAT==='t'?name:stu.name)}</b> — ${T('saved','சேமிக்கப்பட்டது')}${stu?' · '+T('now also in Student Entry','மாணவர் பதிவிலும் சேர்ந்தது'):''}${pin?`<div class="pin">${pin}</div><span class="mut">${T('Shown only once. Share it now.','ஒருமுறை மட்டுமே காட்டப்படும். இப்போதே பகிரவும்.')}</span>`:`<br><span class="mut">${T('A login already exists for this number; the old PIN continues. Use New PIN in Edit Accounts if forgotten.','இந்த எண்ணுக்கு உள்நுழைவு ஏற்கெனவே உள்ளது; பழைய PIN தொடரும். மறந்தால் "கணக்குகளைத் திருத்து" பகுதியில் புதிய PIN.')}</span>`}
+   ${pin?`<a class="btn" style="display:block;text-align:center;text-decoration:none;margin-top:8px" target="_blank" rel="noopener" href="https://wa.me/91${ph}?text=${encodeURIComponent(msg)}">WhatsApp ${T('share','பகிர்')}</a><button class="btn gr" onclick="window.YX.copyMsg()">${T('Copy details','விவரங்களை நகலெடு')}</button>`:''}</div>`;
+  listUsers();stList();idList();
+  ACPIN=genPin();ACIMG='';
+ }catch(e){m2((e.code||'').includes('email-already-in-use')?T('A login already exists for this number.','இந்த எண்ணுக்கு ஏற்கெனவே உள்நுழைவு உள்ளது.'):errText(e))}
+ const b=$('mk');if(b)b.disabled=false;
+}
+/* --- student entry: roster only (students are added in Manage Accounts) --- */
+rosterHtml=function(){
+ const act=STU.filter(s=>s.active!==false),by={};act.forEach(s=>(by[s.cls]=by[s.cls]||[]).push(s));
+ const cl=CLASSES.filter(c=>by[c]);
+ if(!cl.length)return `<div class="card mut">${T('No students yet. Add them in Manage Accounts → Create Account → Parent (+ Add student).','மாணவர் இல்லை. கணக்குகள் → கணக்கு உருவாக்கு → பெற்றோர் (+ மாணவர் சேர்) பகுதியில் சேர்க்கவும்.')}</div>`;
+ const tot=act.filter(s=>ATT[s.id]&&ATT[s.id].st==='P'&&!ATT[s.id].out).length;
+ return `<div class="card"><b style="color:var(--pri)">${T('Check-out for everyone','அனைவருக்கும் வெளியேறு')}</b><button class="btn" style="margin-top:8px" onclick="window.YX.stOutAll()">⏏ ${T('Check-out all classes (now)','அனைத்து வகுப்பும் வெளியே (இப்போது)')}</button><p class="mut" style="margin:8px 0 0">${T('Every student who is checked in and not yet out is checked out now.','உள்ளே வந்து இன்னும் வெளியேறாத அனைவரும் இப்போது வெளியேறியதாகக் குறிக்கப்படுவர்.')} (${tot})</p></div>
+ <div class="cch">${cl.map(c=>`<button onclick="document.getElementById('cl_${c}').scrollIntoView({behavior:'smooth',block:'start'})">${T('Class','வகுப்பு')} ${c}</button>`).join('')}</div>`+
+ cl.map(c=>{const L2=by[c],inn=L2.filter(s=>ATT[s.id]&&ATT[s.id].st==='P').length;
+  return `<div class="cbar" id="cl_${c}"><span>${T('Class','வகுப்பு')} ${c} · ${inn}/${L2.length} ${T('in','உள்ளே')}</span><button class="btn sm" onclick="window.YX.stOutCls('${c}')">⏏ ${T('Check-out class','வகுப்பு வெளியே')}</button></div>`+
+  L2.map(s=>{const a=ATT[s.id];return `<div class="sc2"><div class="t1">${avt(s.name)}<div><b>${esc(s.name)}</b><span class="mut" style="font-size:12px">${esc(s.parentName||'')}</span></div></div><div class="t2">${stTag(a)}<button class="gb" onclick="window.YX.stMark('${s.id}','in')">✔ ${T('Check-in','வருகை')}</button><button class="rb" onclick="window.YX.stMark('${s.id}','abs')">✖ ${T('Absent','வரவில்லை')}</button>${a&&a.st==='P'&&!a.out?`<button class="ob" onclick="window.YX.stMark('${s.id}','out')">⏏ ${T('Check-out','வெளியே')}</button>`:''}</div></div>`}).join('')}).join('');
+};
+V.stu=async()=>{
+ await loadStu();await loadAtt(today());
+ $('v').innerHTML=`<div id="rost">${rosterHtml()}</div>`;pgTitle();
+};
+/* --- simple line icons (same as the prototype) --- */
+const LIP={home:'<path d="M3 11l9-8 9 8M5 10v10h14V10"/>',calcheck:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M9 15l2 2 4-4"/>',cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',timer:'<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/>',cash:'<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/>',trend:'<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>',key:'<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3"/>',pencil:'<path d="M4 20l1-4L16 5l3 3L8 19z"/>',bell:'<path d="M6 16v-5a6 6 0 0112 0v5l2 2H4z"/><path d="M10 21h4"/>',gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',grad:'<path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/><path d="M22 9v6"/>',family:'<circle cx="8" cy="8" r="2.5"/><circle cx="16" cy="8" r="2.5"/><circle cx="12" cy="14" r="2"/><path d="M3 19c.3-3 2.5-4.5 5-4.5M21 19c-.3-3-2.5-4.5-5-4.5M8.5 20c.4-2 1.7-3 3.5-3s3.1 1 3.5 3"/>',more:'<path d="M4 7h16M4 12h16M4 17h16"/>',grades:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 15l2-6 2 6M7.8 13h2.4M14 9h4M14 13h4"/>',pie:'<path d="M21 12A9 9 0 1112 3v9z"/><path d="M15 3.5A9 9 0 0120.5 9H15z"/>'};
+const LIM={'🏠':['home'],'🗓️':['calcheck'],'🎉':['cal'],'🌴':['timer','o'],'💰':['cash','g'],'📈':['trend'],'🔑':['key'],'📝':['pencil'],'🔔':['bell'],'⚙️':['gear'],'🕘':['clock'],'🎓':['grad'],'👨‍👩‍👧':['family'],'☰':['more'],'📋':['grades'],'🧾':['cash','g'],'📊':['pie']};
+const liH=x=>{const k=LIM[(x||'').trim()];return k?`<span class="li ${k[1]||''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${LIP[k[0]]}</svg></span>`:null};
+function decoIcons(){
+ document.querySelectorAll('.tile .ic:not([data-d]),.bnav button i:not([data-d]),.qb>span:not([data-d]),.mtile>span:not([data-d])').forEach(e=>{e.dataset.d=1;const r=liH(e.textContent);if(r)e.innerHTML=r});
+ document.querySelectorAll('nav.side button:not([data-d])').forEach(e=>{e.dataset.d=1;const m=e.textContent.trim().match(/^(\S+)\s+(.*)$/);if(m){const r=liH(m[1]);if(r)e.innerHTML=r+'<span>'+m[2]+'</span>'}});
+}
+new MutationObserver(decoIcons).observe(document.body,{childList:true,subtree:true});
+setTimeout(()=>Object.assign(window.YX,{acat:k=>{ACAT=k;acForm()},newPin:()=>{ACPIN=genPin();const e=$('pinv');if(e)e.textContent=ACPIN},mkAcc,idPick:async i=>{const f=i.files[0];ACIMG='';if(!f){$('idp').innerHTML='';return}try{ACIMG=await readImg(f);$('idp').innerHTML=`<img src="${ACIMG}" style="max-width:160px;border-radius:10px;margin-top:6px">`}catch(e){m2(T('Could not read the photo.','புகைப்படத்தைப் படிக்க முடியவில்லை.'))}},stOff2:async(id,on)=>{try{await updateDoc(doc(fs,'students',id),{active:on});await stList()}catch(e){alert(errText(e))}},idView:id=>{const x=(window.__ids||[]).find(z=>z.id===id),b=$('iv_'+id);if(b)b.innerHTML=b.innerHTML?'':`<img src="${x.img}" style="max-width:100%;border-radius:10px;margin:6px 0">`}}),0);
 async function route(){
  const u=auth.currentUser;
  if(!u){TAB='home';CLS='';STU=[];ATT={};EXID='';return viewLogin()}
