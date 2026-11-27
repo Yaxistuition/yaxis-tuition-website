@@ -121,6 +121,13 @@ details.acd{background:#fff;border:1px solid #e6eaf3;border-radius:16px;margin:1
 .pinrow{display:flex;align-items:center;gap:12px;margin:4px 0 8px}.pinrow .btn{width:auto;margin:0}
 .stbk{border:1px dashed #cfd8ea;border-radius:12px;padding:8px 12px 12px;margin:10px 0;background:#fafcff}
 .sc2 .lb{background:#e8eefb;color:var(--pri)!important;font-weight:600}
+.pgg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.pgg button{background:#fff;border:1px solid #e6eaf3;border-radius:16px;padding:16px 6px;text-align:center;cursor:pointer;font-family:inherit;box-shadow:none;margin:0;width:auto}.pgg b{display:block;font-size:24px;color:var(--pri)}.pgg span{font-size:12px;color:var(--mut)}
+.srow2{display:flex;align-items:center;gap:12px;cursor:pointer}
+.sum3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;margin-top:8px}.sum3 div{background:#f3f6fc;border-radius:12px;padding:10px 4px;font-size:12px;color:var(--mut)}.sum3 b{display:block;font-size:22px;color:var(--pri)}
+.chd{font-size:19px;font-weight:800;color:var(--pri);margin-bottom:6px}
+.chipsr{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}.chipsr button{border:0;background:#e3e8f3;color:var(--pri);padding:10px 14px;border-radius:12px;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;width:auto;margin:0;box-shadow:none}.chipsr button.on{background:var(--pri);color:#fff}.chipsr button.ov{background:#fff0d9;color:#8a5a00}.chipsr button.ov.on{background:#d9822b;color:#fff}
+.bars .br{display:flex;align-items:center;gap:8px;margin:8px 0}.bars .bl{width:96px;font-size:13px;flex:none}.bars .bt{flex:1;height:14px;background:#eaeef6;border-radius:8px;overflow:hidden;display:block}.bars .bt i{display:block;height:100%;border-radius:8px}.bars b{width:44px;text-align:right;font-size:13px}
+.legend{display:flex;flex-wrap:wrap;gap:8px;font-size:11.5px;margin:6px 0}.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px}
 </style></head><body><div id="app"><p class="c mut">…</p></div>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
@@ -221,7 +228,7 @@ function navItems(){
  if(ME.role==='owner')return [['home','🏠',T('Home','முகப்பு')],['att','🗓️',T('Attendance','வருகை')],['cal','🎉',T('Calendar','நாட்காட்டி')],['lv','🌴',T('Leave','விடுப்பு')],['pay','💰',T('Salary','சம்பளம்')],['pgrid','📈',T('Progress Reports','முன்னேற்ற அறிக்கைகள்')],['acc','🔑',T('Manage Accounts','கணக்குகள்')],['stu','📝',T('Student Entry','மாணவர் பதிவு')],['alerts','🔔',T('Alerts','அறிவிப்புகள்')],['settings','⚙️',T('Settings','அமைப்புகள்')],['ex','📋',T('Exams','தேர்வுகள்')],['fee','🧾',T('Fees','கட்டணம்')]];
  return [['home','🏠',T('Home','முகப்பு')],['sa','🕘',T('My Attendance','என் வருகை')],['att','🗓️',T('Student Attendance','மாணவர் வருகை')],['stu','🎓',T('Student Entry','மாணவர் பதிவு')],['lv','🌴',T('Leave','விடுப்பு')],['ex','📈',T('Progress','முன்னேற்றம்')],['pgrid','📊',T('Progress Reports','முன்னேற்ற அறிக்கைகள்')]];
 }
-const mainKeys=()=>ME.role==='owner'?['home','att','cal','lv','pay']:ME.role==='teacher'?['home','sa','att','stu','lv']:['home','alerts'];
+const mainKeys=()=>ME.role==='owner'?['home','att','cal','lv','pay']:ME.role==='teacher'?['home','sa','stu','pgrid','lv']:['home','alerts'];
 function side(){const it=navItems();if(it.length<2)return '';return `<nav class="side"><div class="logo2"><img src="/assets/images/logo.png" alt="Y Axis Tuition"></div>${it.map(x=>`<button class="${x[0]===TAB?'on':''}" onclick="window.YX.tab('${x[0]}')">${x[1]} ${x[2]}</button>`).join('')}</nav>`}
 function bnav(){const it=navItems();if(it.length<2)return '';const mk=mainKeys(),main=it.filter(x=>mk.includes(x[0])),more=it.length>main.length,act=main.some(x=>x[0]===TAB)?TAB:'more';
  return `<div class="bnav"><div>${main.map(x=>`<button class="${act===x[0]?'on':''}" onclick="window.YX.tab('${x[0]}')"><i>${x[1]}</i>${x[2]}</button>`).join('')}${more?`<button class="${act==='more'?'on':''}" onclick="window.YX.tab('more')"><i>☰</i>${T('More','மேலும்')}</button>`:''}</div></div>`}
@@ -1256,6 +1263,249 @@ reqCard=async function(){
  ${rows.map(x=>`<div class="row"><b>${esc(x.studentName||'')}<br><span class="mut">${esc(x.parentName||'')} ${esc(x.phone)} · ${T('added by','சேர்த்தவர்')} ${esc(x.by||'')}</span></b><button class="btn sm" onclick="window.YX.reqAcc('${x.phone}')">${T('Create account','கணக்கு உருவாக்கு')} →</button></div>`).join('')}</div>`;
 };
 setTimeout(()=>Object.assign(window.YX,{stAddOpen:stAddOpen2,stuAdd:stuSave}),0);
+/* ---- stage 14: Progress module: class grid -> students -> student page ---- */
+const PG={c:'',sid:'',tab:'prog',pm:'',am:'',pt:'m',tf:null,msg:'',ed:false};
+let PD={marks:[],att:[],rm:{}},MGK=[],MGV={};
+const SUBJ=c=>{const n=+c;return n<=5?['Tamil','English','Maths','EVS']:n<=10?['Tamil','English','Maths','Science','Social Science']:['Tamil','English','Maths','Physics','Chemistry','Biology','Computer Science','Accountancy','Commerce','Economics','History','Business Maths']};
+const ALLS=['Tamil','English','Maths','EVS','Science','Social Science','Physics','Chemistry','Biology','Computer Science','Accountancy','Commerce','Economics','History','Business Maths'];
+const SNM={Tamil:'தமிழ்',English:'ஆங்கிலம்',Maths:'கணிதம்',EVS:'சுற்றுச்சூழலியல்',Science:'அறிவியல்','Social Science':'சமூக அறிவியல்',Physics:'இயற்பியல்',Chemistry:'வேதியியல்',Biology:'உயிரியல்','Computer Science':'கணினி அறிவியல்',Accountancy:'கணக்குப்பதிவியல்',Commerce:'வணிகவியல்',Economics:'பொருளியல்',History:'வரலாறு','Business Maths':'வணிகக் கணிதம்'};
+const subN=z=>SNM[z]?T(z,SNM[z]):z;
+const pcn=x=>x.m*100/x.max,avg=a=>a.reduce((p,c)=>p+c,0)/a.length,rnd=x=>Math.round(x);
+const pAddD=(d,k)=>{const x=new Date(d+'T12:00:00');x.setDate(x.getDate()+k);return x.toLocaleDateString('en-CA')};
+const fdy=d=>{const [y,m,dd]=d.split('-');return (+dd)+' '+(L==='ta'?MNT:MNE)[+m]+' '+y};
+const joinD=s=>{try{return s.join||(s.at&&s.at.toDate?s.at.toDate().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'}):today())}catch(e){return today()}};
+const barC=a=>a==null?'#999':a>=75?'#1B8F1E':a>=50?'#f2a900':'#d64545';
+const SCL=['#2a5bd7','#d64545','#1B8F1E','#f2a900','#8a4fd0','#0fa3b1','#e07b39','#6b7280','#b83280','#2f855a','#b7791f','#4a5568','#7c3aed','#0e7490','#be123c'];
+const scol=n=>SCL[Math.max(0,ALLS.indexOf(n))%SCL.length];
+const avt2=(s,z)=>s.photo?`<img class="av2" style="width:${z}px;height:${z}px;object-fit:cover" src="${esc(s.photo)}" alt="">`:`<span class="av2" style="width:${z}px;height:${z}px;font-size:${Math.round(z*.42)}px">${esc((s.name||'?').trim().charAt(0).toUpperCase())}</span>`;
+function shrinkImg(f,max,q){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',q))};im.onerror=rej;im.src=fr.result};fr.onerror=rej;fr.readAsDataURL(f)})}
+async function pgLoad(s){
+ const par=ME.role==='parent';PD={marks:[],att:[],rm:{}};
+ try{const q=par?query(collection(fs,'marks'),where('parentPhone','==',ME.phone),where('pub','==',true)):query(collection(fs,'marks'),where('sid','==',s.id));(await getDocs(q)).forEach(d=>{const x=d.data();if(x.sid===s.id)PD.marks.push({id:d.id,...x})})}catch(e){}
+ try{const q=par?query(collection(fs,'att'),where('parentPhone','==',ME.phone)):query(collection(fs,'att'),where('sid','==',s.id));(await getDocs(q)).forEach(d=>{const x=d.data();if(x.sid===s.id)PD.att.push(x)})}catch(e){}
+ try{const q=par?query(collection(fs,'remarks'),where('parentPhone','==',ME.phone)):query(collection(fs,'remarks'),where('sid','==',s.id));(await getDocs(q)).forEach(d=>{const x=d.data();if(x.sid===s.id)PD.rm[x.pm]=x})}catch(e){}
+}
+const attS=(s,from,to)=>{const r=PD.att.filter(x=>x.date>=from&&x.date<=to);const p=r.filter(x=>x.st==='P').length,a=r.filter(x=>x.st==='A').length;return {p,a,cd:p+a,pct:p+a?rnd(p*100/(p+a)):null}};
+function pData(s,pm){
+ const t0=today(),j=joinD(s);let from,to,label;
+ if(pm==='all'){from=j;to=t0;label=T('Overall — since joining','ஓவரால் — சேர்ந்தது முதல்')}
+ else{from=pm+'-01';to=mEnd(pm)<t0?mEnd(pm):t0;if(from<j)from=j;label=mLab(pm)}
+ const tests=PD.marks.filter(x=>!x.ab&&x.m!=null&&x.date>=from&&x.date<=to);
+ const subs=ALLS.filter(z=>tests.some(y=>y.subject===z)).map(z=>{const a=tests.filter(y=>y.subject===z).map(pcn);return {sub:z,avg:avg(a),n:a.length}});
+ return {from,to,label,tests,subs,overall:subs.length?avg(subs.map(x=>x.avg)):null,att:attS(s,from,to)};
+}
+function monthlyS(from,to){
+ const ms=[];let m=from.slice(0,7);const e=to.slice(0,7);while(m<=e){ms.push(m);m=addM(m,1)}
+ const tt=PD.marks.filter(x=>!x.ab&&x.m!=null&&x.date>=from&&x.date<=to);
+ return {labels:ms.map(mLab),series:ALLS.filter(z=>tt.some(y=>y.subject===z)).map(z=>({name:z,pts:ms.map(m=>{const a=tt.filter(x=>x.subject===z&&x.date.startsWith(m));return a.length?avg(a.map(pcn)):null})}))};
+}
+function barsH(subs){
+ if(!subs.length)return `<p class="mut">${T('No test marks in this period. Subjects without marks are not counted.','இந்தக் காலத்தில் மதிப்பெண்கள் இல்லை. மதிப்பெண் இல்லாத பாடங்கள் கணக்கில் சேராது.')}</p>`;
+ return `<div class="bars">`+subs.map(x=>`<div class="br"><span class="bl">${esc(subN(x.sub))}</span><span class="bt"><i style="width:${Math.max(3,rnd(x.avg))}%;background:${barC(x.avg)}"></i></span><b style="color:${barC(x.avg)}">${rnd(x.avg)}%</b></div>`).join('')+`</div>`;
+}
+function chartH(labels,series){
+ const W=340,Hh=190,Lm=30,R=8,Tp=10,B=26,w=W-Lm-R,h=Hh-Tp-B,n=labels.length;
+ const X=i=>Lm+(n<2?w/2:i*w/(n-1)),Y=v=>Tp+h-(v/100)*h;
+ let s=`<svg viewBox="0 0 ${W} ${Hh}" role="img" style="width:100%">`;
+ [0,25,50,75,100].forEach(g=>{s+=`<line x1="${Lm}" x2="${W-R}" y1="${Y(g)}" y2="${Y(g)}" stroke="#e1e6f0"/><text x="${Lm-4}" y="${Y(g)+3}" font-size="9" text-anchor="end" fill="#6a748a">${g}%</text>`});
+ labels.forEach((l,i)=>{s+=`<text x="${X(i)}" y="${Hh-8}" font-size="9" text-anchor="${i===n-1&&n>1?'end':i===0&&n>1?'start':'middle'}" fill="#6a748a">${esc(l)}</text>`});
+ series.forEach(se=>{const c=scol(se.name);const pts=se.pts.map((v,i)=>v==null?null:[X(i),Y(v)]).filter(Boolean);if(pts.length>1)s+=`<polyline fill="none" stroke="${c}" stroke-width="2" points="${pts.map(p=>p.join(',')).join(' ')}"/>`;pts.forEach(p=>s+=`<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="${c}"/>`)});
+ return s+'</svg><div class="legend">'+series.map(se=>`<span><i style="background:${scol(se.name)}"></i>${esc(subN(se.name))}</span>`).join('')+'</div>';
+}
+function trendH(labels,series){
+ if(!series.length)return '';
+ let h=`<div style="overflow-x:auto"><table class="xt"><tr><th>${T('Subject','பாடம்')}</th>${labels.map(l=>`<th>${esc(l)}</th>`).join('')}</tr>`;
+ series.forEach(se=>{let prev=null;h+=`<tr><td>${esc(subN(se.name))}</td>`;se.pts.forEach(v=>{if(v==null){h+='<td>–</td>';return}let a='';if(prev!=null)a=v>prev+0.4?' <span style="color:#1B8F1E">▲</span>':v<prev-0.4?' <span style="color:#d64545">▼</span>':' =';h+=`<td>${rnd(v)}%${a}</td>`;prev=v});h+='</tr>'});
+ return h+'</table></div>';
+}
+function autoNote(s,P,pm){
+ const nm=s.name,Ls=a=>a.map(x=>subN(x.sub)).join(', ');
+ if(!P.subs.length)return T(`No test marks have been entered for ${nm} in this period yet.`,`இந்தக் காலத்தில் ${nm} அவர்களுக்கு தேர்வு மதிப்பெண்கள் இன்னும் பதிவாகவில்லை.`);
+ const st=P.subs.filter(x=>x.avg>=75),ok=P.subs.filter(x=>x.avg>=50&&x.avg<75),wk=P.subs.filter(x=>x.avg<50),out=[];
+ out.push(T(`Based on the marks, ${nm} has an average of ${rnd(P.overall)}%.`,`மதிப்பெண்களின் அடிப்படையில் ${nm} அவர்களின் சராசரி ${rnd(P.overall)}%.`));
+ if(st.length)out.push(T(`Doing very well in ${Ls(st)} (75% or more).`,`${Ls(st)} பாடங்களில் மிகச் சிறப்பாக உள்ளார் (75% அல்லது அதற்கு மேல்).`));
+ if(ok.length)out.push(T(`Satisfactory in ${Ls(ok)}; a little more practice will lift these.`,`${Ls(ok)} பாடங்களில் திருப்தியான நிலை; சிறிது கூடுதல் பயிற்சி மேம்படுத்தும்.`));
+ if(wk.length)out.push(T(`Needs special attention in ${Ls(wk)} (below 50%).`,`${Ls(wk)} பாடங்களில் சிறப்புக் கவனம் தேவை (50%க்குக் கீழ்).`));
+ let tr=null;
+ if(pm==='all'){const R=monthlyS(P.from,P.to);const ms=R.labels.map((_,i)=>{const a=R.series.map(z=>z.pts[i]).filter(x=>x!=null);return a.length?avg(a):null}).filter(x=>x!=null);if(ms.length>=2)tr=[ms[0],ms[ms.length-1]]}
+ else{const Q=pData(s,addM(pm,-1));if(Q.overall!=null&&P.overall!=null)tr=[Q.overall,P.overall]}
+ if(tr){const d=tr[1]-tr[0];out.push(pm==='all'?(d>=2?T(`Since joining Y Axis Tuition Centre the average has improved from ${rnd(tr[0])}% to ${rnd(tr[1])}% — good progress.`,`Y Axis Tuition Centre-ல் சேர்ந்தபின் சராசரி ${rnd(tr[0])}%-ல் இருந்து ${rnd(tr[1])}% ஆக உயர்ந்துள்ளது — நல்ல முன்னேற்றம்.`):d<=-2?T(`The average has dropped from ${rnd(tr[0])}% to ${rnd(tr[1])}% since joining; extra support is advised.`,`சராசரி ${rnd(tr[0])}%-ல் இருந்து ${rnd(tr[1])}% ஆகக் குறைந்துள்ளது; கூடுதல் உதவி தேவை.`):T('Performance has stayed steady since joining.','சேர்ந்தது முதல் செயல்திறன் ஒரே நிலையில் உள்ளது.')):(d>=2?T(`Improved by ${rnd(d)}% compared with last month.`,`கடந்த மாதத்தை விட ${rnd(d)}% முன்னேற்றம்.`):d<=-2?T(`Dropped by ${rnd(-d)}% compared with last month.`,`கடந்த மாதத்தை விட ${rnd(-d)}% குறைந்துள்ளது.`):T('Steady compared with last month.','கடந்த மாதத்தைப் போலவே உள்ளது.')))}
+ const a=P.att;if(a.cd){const r=a.p*100/a.cd;if(r<75)out.push(T(`Attendance is only ${rnd(r)}% — regular attendance will help the marks.`,`வருகை ${rnd(r)}% மட்டுமே — தவறாமல் வருவது மதிப்பெண்ணை உயர்த்தும்.`));else if(r>=90)out.push(T(`Excellent attendance (${rnd(r)}%).`,`சிறந்த வருகை (${rnd(r)}%).`))}
+ return out.join(' ');
+}
+const RPH=[['Excellent progress — keep it up.','சிறந்த முன்னேற்றம் — தொடரட்டும்.'],['Good effort; a little more practice is needed.','நல்ல முயற்சி; சிறிது கூடுதல் பயிற்சி தேவை.'],['Needs more attention at home too.','வீட்டிலும் கூடுதல் கவனம் தேவை.'],['Attendance must improve.','வருகை மேம்பட வேண்டும்.'],['Weak in some subjects — extra practice will be given.','சில பாடங்களில் பலவீனம் — கூடுதல் பயிற்சி அளிக்கப்படும்.']];
+const sumH=(a,b,c)=>`<div class="sum3">${[a,b,c].map(x=>`<div><b${x[2]?` style="color:${x[2]}"`:''}>${x[0]}</b>${x[1]}</div>`).join('')}</div>`;
+const pgBox=()=>{const m=PG.msg;PG.msg='';return m?`<div class="msg ${m[0]==='!'?'err':'okm'}">${esc(m.replace(/^!/,''))}</div>`:''};
+/* ---- tabs ---- */
+function tabProg(s){
+ const par=ME.role==='parent',big=+s.cls>=10,j=joinD(s),t0=today();
+ let h=par?'':`<button class="btn" style="background:#1B8F1E" onclick="window.YX.pgTab('tests',true)">＋ ${T('Enter test marks','தேர்வு மதிப்பெண் உள்ளிடு')}</button>`;
+ if(big)h+=`<div class="tabs"><button class="${PG.pt==='w'?'on':''}" onclick="window.YX.pgPt('w')">${T('Weekly','வாராந்திரம்')}</button><button class="${PG.pt!=='w'?'on':''}" onclick="window.YX.pgPt('m')">${T('Monthly / Overall','மாதம் / ஓவரால்')}</button></div>`;
+ if(big&&PG.pt==='w'){
+  const ws=pAddD(t0,-(((new Date(t0+'T12:00:00')).getDay()+6)%7)-7),we=pAddD(ws,6);
+  const l=PD.marks.filter(x=>!x.ab&&x.m!=null&&x.date>=ws&&x.date<=we).sort((a,b)=>a.date<b.date?-1:1),a=attS(s,ws,we);
+  return h+`<div class="card"><b>${T('Last week','கடந்த வாரம்')}: ${fdy(ws)} – ${fdy(we)}</b>${l.length?`<table class="xt" style="margin-top:6px"><tr><th>${T('Date','தேதி')}</th><th>${T('Subject','பாடம்')}</th><th>${T('Marks','மதிப்பெண்')}</th><th>%</th></tr>`+l.map(x=>`<tr><td>${fmtD(x.date)}</td><td>${esc(subN(x.subject))}</td><td>${x.m}/${x.max}</td><td>${rnd(pcn(x))}%</td></tr>`).join('')+`</table><p><b>${T('Average','சராசரி')}: ${rnd(avg(l.map(pcn)))}%</b></p>`:`<p class="mut">${T('No tests were entered last week.','கடந்த வாரம் தேர்வுகள் பதிவாகவில்லை.')}</p>`}${sumH([a.p,T('Present','வந்தது')],[a.a,T('Absent','வராதது')],[a.cd,T('Class days','வகுப்பு நாள்')])}</div>`;
+ }
+ const jm=j.slice(0,7);let ks=pKeys().filter(k=>k>=jm);if(!ks.length)ks=[t0.slice(0,7)];
+ if(!PG.pm||(PG.pm!=='all'&&!ks.includes(PG.pm)))PG.pm=ks[0];
+ h+=`<div class="chipsr">${ks.map(k=>`<button class="${PG.pm===k?'on':''}" onclick="window.YX.pgPm('${k}')">${mLab(k).replace(/ 20(\d\d)$/,' $1')}</button>`).join('')}<button class="${PG.pm==='all'?'on':''} ov" onclick="window.YX.pgPm('all')">${T('Overall','ஓவரால்')}</button></div>`;
+ const P=pData(s,PG.pm),a=P.att,rk=PD.rm[PG.pm];
+ h+=`<div class="card"><div class="chd">${esc(P.label)}</div><p class="mut" style="margin-top:-6px">${fdy(P.from)} – ${fdy(P.to)}</p>${sumH([P.overall==null?'—':rnd(P.overall)+'%',T('Average marks','சராசரி மதிப்பெண்'),barC(P.overall)],[a.pct==null?'—':a.pct+'%',T('Attendance','வருகை')],[P.tests.length,T('Tests','தேர்வுகள்')])}</div>
+ <div class="card"><b>${T('Subject-wise graph','பாடவாரி வரைபடம்')}</b>${barsH(P.subs)}`;
+ if(PG.pm==='all'){const R=monthlyS(P.from,P.to);if(R.series.length&&R.labels.length>1)h+=`<div style="margin-top:12px"><b>${T('Month-by-month trend','மாதவாரி போக்கு')}</b>${chartH(R.labels,R.series)}${trendH(R.labels,R.series)}</div>`}
+ h+=`</div><div class="card" style="border-left:4px solid #2a5bd7"><b>${T('Summary (automatic, from marks & attendance)','சுருக்கம் (மதிப்பெண் & வருகையிலிருந்து தானாக)')}</b><p style="margin:6px 0 0">${esc(autoNote(s,P,PG.pm))}</p></div>
+ <div class="card" style="border-left:4px solid #f2a900"><b>${T("Teacher's remark",'ஆசிரியர் ரிமார்க்')}</b><p style="margin:6px 0 0">${rk&&rk.t?esc(rk.t)+`<br><small class="mut">— ${esc(rk.by||'')}</small>`:`<span class="mut">${T('No remark yet.','இன்னும் ரிமார்க் இல்லை.')}</span>`}</p></div>`;
+ if(!par)h+=`<div class="card"><b>${T('Write / change remark','ரிமார்க் எழுது / மாற்று')}</b><div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">${RPH.map((x,i)=>`<button class="btn sm gr" style="font-size:12px" onclick="window.YX.pgRmAdd(${i})">${esc(x[L==='ta'?1:0])}</button>`).join('')}</div><textarea id="rm_t" rows="3">${rk?esc(rk.t||''):''}</textarea><button class="btn" style="background:#1B8F1E" onclick="window.YX.pgRmSave()">${T('Save remark','ரிமார்க் சேமி')}</button></div>`;
+ return h+`<button class="btn" style="background:#1B8F1E" onclick="window.YX.pgPdf()">📄 ${T('Report in PDF','PDF அறிக்கை')}</button>`;
+}
+function tabDay(s){
+ const j=joinD(s),t0=today(),a=attS(s,j,t0);
+ const ms=[];let m=t0.slice(0,7);const jm=j.slice(0,7);for(let i=0;i<12&&m>=jm;i++){ms.push(m);m=addM(m,-1)}
+ if(!PG.am||!ms.includes(PG.am))PG.am=ms[0];
+ const r=PD.att.filter(x=>x.date.startsWith(PG.am)).sort((x,y)=>x.date<y.date?1:-1),p=r.filter(x=>x.st==='P').length,ab=r.filter(x=>x.st==='A').length;
+ return `<div class="card"><b>${T('Attendance so far','இதுவரை வருகை')} — ${a.pct==null?'—':a.pct+'%'}</b>${sumH([a.p,T('Present','வந்தது')],[a.a,T('Absent','வராதது')],[a.cd,T('Class days','வகுப்பு நாள்')])}</div>
+ <div class="chipsr">${ms.map(k=>`<button class="${PG.am===k?'on':''}" onclick="window.YX.pgAm('${k}')">${mLab(k).replace(/ 20(\d\d)$/,' $1')}</button>`).join('')}</div>
+ <div class="card"><b>${mLab(PG.am)}</b> · ${p} ${T('present','வருகை')} · ${ab} ${T('absent','வரவில்லை')}<table class="xt" style="margin-top:8px"><tr><th>${T('Date','தேதி')}</th><th>${T('Status','நிலை')}</th><th>${T('In','வருகை')}</th><th>${T('Out','புறப்பாடு')}</th></tr>${r.map(x=>`<tr><td>${fmtD(x.date)}</td><td>${x.st==='P'?T('Present','வந்தார்'):T('Absent','வரவில்லை')}</td><td>${esc(x.in||'–')}</td><td>${esc(x.out||'–')}</td></tr>`).join('')||`<tr><td colspan="4" class="mut">${T('No records.','பதிவுகள் இல்லை.')}</td></tr>`}</table></div>
+ <button class="btn" style="background:#1B8F1E" onclick="window.YX.pgPdfDay()">📄 ${T('Report in PDF','PDF அறிக்கை')}</button>`;
+}
+function tabTests(s){
+ const l=PD.marks.slice().sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);let h=pgBox();
+ h+=`<button class="btn" style="background:#1B8F1E" onclick="window.YX.pgTab('tests',true)">＋ ${T('Add test marks','தேர்வு மதிப்பெண் சேர்')}</button>`;
+ if(PG.tf==='new'){
+  h+=`<div class="card"><b>${T('New test — subjects of class ','புதிய தேர்வு — வகுப்பு ')}${esc(s.cls)}</b><div class="two"><div><label>${T('Date','தேதி')}</label><input id="t_d" type="date" value="${today()}" max="${today()}"></div><div><label>${T('Out of','மொத்தம்')}</label><input id="t_x" inputmode="numeric" value="50"></div></div>
+  <p class="mut">${T('Enter marks only for subjects written (write A for absent). Empty ones are not counted.','எழுதிய பாடங்களுக்கு மட்டும் மதிப்பெண் உள்ளிடவும் (வரவில்லை எனில் A). காலியாக விட்டவை கணக்கில் சேராது.')}${ME.role==='owner'?' '+T('Marks entered by the owner are published to the parent immediately.','உரிமையாளர் உள்ளிடும் மதிப்பெண்கள் உடனே பெற்றோருக்கு வெளியிடப்படும்.'):' '+T('After saving, the owner will approve and publish.','சேமித்த பிறகு உரிமையாளர் ஒப்புதல் அளித்து வெளியிடுவார்.')}</p>
+  ${SUBJ(s.cls).map((z,i)=>`<div style="display:flex;align-items:center;gap:8px;margin-top:6px"><span style="flex:1">${esc(subN(z))}</span><input id="tm_${i}" inputmode="decimal" style="width:90px"></div>`).join('')}
+  <div id="m2"></div><div class="two" style="margin-top:10px"><button class="btn" onclick="window.YX.pgSaveTests()">${T('Save','சேமி')}</button><button class="btn gr" onclick="window.YX.pgTab('tests',false)">${T('Cancel','ரத்து')}</button></div></div>`;
+ }
+ h+=`<div class="card"><table class="xt"><tr><th>${T('Date','தேதி')}</th><th>${T('Subject','பாடம்')}</th><th>${T('Marks','மதிப்பெண்')}</th><th></th></tr>`;
+ l.forEach(x=>{
+  if(PG.tf===x.id){h+=`<tr><td colspan="4"><div style="background:#f3f6fc;border-radius:10px;padding:8px"><b>${fmtD(x.date)} · ${esc(subN(x.subject))}</b><div class="two"><div><label>${T('Marks (A = absent)','மதிப்பெண் (A = வரவில்லை)')}</label><input id="e_m" value="${x.ab?'A':esc(x.m)}"></div><div><label>${T('Out of','மொத்தம்')}</label><input id="e_x" value="${esc(x.max)}"></div></div><div id="m2"></div><div class="two"><button class="btn" onclick="window.YX.pgSaveEdit('${x.id}')">${T('Save','சேமி')}</button><button class="btn gr" onclick="window.YX.pgTab('tests',false)">${T('Cancel','ரத்து')}</button></div></div></td></tr>`;return}
+  const can=ME.role==='owner'||!x.pub;
+  h+=`<tr><td>${fmtD(x.date)}</td><td>${esc(subN(x.subject))}</td><td>${x.ab?T('Absent','வரவில்லை'):x.m+'/'+x.max+' ('+rnd(pcn(x))+'%)'}<br><span class="tag ${x.pub?'ok':''}">${x.pub?T('Published','வெளியிடப்பட்டது'):T('Waiting for owner','உரிமையாளர் ஒப்புதல்')}</span></td><td style="white-space:nowrap">${can?`<button class="btn sm gr" onclick="window.YX.pgEdit('${x.id}')">✎</button>`:`<span class="mut">🔒</span>`}${ME.role==='owner'?` <button class="btn sm gr" onclick="window.YX.pgDel('${x.id}')">🗑</button>`:''}</td></tr>`});
+ if(!l.length)h+=`<tr><td colspan="4" class="mut">${T('No tests yet.','தேர்வுகள் இல்லை.')}</td></tr>`;
+ return h+'</table></div>';
+}
+function tabDet(s){
+ const r=(a,b)=>`<tr><th>${a}</th><td>${b==null||b===''?'—':esc(b)}</td></tr>`;
+ if(PG.ed&&ME.role==='owner')return `<div class="card"><label>${T('Student name','மாணவர் பெயர்')}</label><input id="d_n" value="${esc(s.name||'')}"><label>${T('Class','வகுப்பு')}</label><select id="d_c">${CLASSES.map(c=>`<option ${c===s.cls?'selected':''}>${c}</option>`).join('')}</select><label>${T('School','பள்ளி')}</label><input id="d_s" value="${esc(s.school||'')}"><label>${T('Parent name','பெற்றோர் பெயர்')}</label><input id="d_p" value="${esc(s.parentName||'')}"><div id="m2"></div><div class="two"><button class="btn" onclick="window.YX.pgDetSave()">${T('Save','சேமி')}</button><button class="btn gr" onclick="window.YX.pgDetEdit(false)">${T('Cancel','ரத்து')}</button></div></div>`;
+ return `<div class="card">${pgBox()}<table class="xt">${r(T('Name','பெயர்'),s.name)}${r(T('School','பள்ளி'),s.school)}${r(T('Class','வகுப்பு'),s.cls)}${r(T('Parent name','பெற்றோர் பெயர்'),s.parentName)}<tr><th>${T('Parent mobile','பெற்றோர் மொபைல்')}</th><td>${s.parentPhone?`<a href="tel:${esc(s.parentPhone)}" style="color:var(--pri);font-weight:700">📞 ${esc(s.parentPhone)}</a>`:'—'}</td></tr>${r(T('Joining date','சேர்ந்த தேதி'),fdy(joinD(s)))}</table>${ME.role==='owner'?`<button class="btn gr" style="margin-top:10px" onclick="window.YX.pgDetEdit(true)">✎ ${T('Edit details','விவரம் திருத்து')}</button>`:`<p class="mut">${T('Only the owner can change details.','உரிமையாளர் மட்டுமே விவரங்களை மாற்ற முடியும்.')}</p>`}</div>`;
+}
+function pgStudent(s){
+ const par=ME.role==='parent';
+ const tabs=par?[['day',T('Attendance Report','வருகை அறிக்கை')],['prog',T('Progress','முன்னேற்றம்')]]:[['day',T('Attendance Report','வருகை அறிக்கை')],['prog',T('Progress','முன்னேற்றம்')],['tests',T('Tests','தேர்வுகள்')],['det',T('Details','விவரங்கள்')]];
+ if(!tabs.some(x=>x[0]===PG.tab))PG.tab='prog';
+ const back=par?`window.YX.tab('home')`:`window.YX.pgBack()`;
+ $('v').innerHTML=`<button class="btn sm gr" style="margin-bottom:10px" onclick="${back}">← ${par?T('Back','பின்'):T('Class','வகுப்பு')+' '+esc(s.cls)}</button>
+ <div class="card"><div style="display:flex;gap:14px;align-items:center">${avt2(s,86)}<div style="flex:1"><b style="font-size:18px">${esc(s.name)}</b><div class="mut">${T('Class','வகுப்பு')} ${esc(s.cls)}${s.school?' · '+esc(s.school):''}<br>${T('Joined','சேர்ந்தது')}: ${fdy(joinD(s))}</div>${par?'':`<label class="btn sm gr" style="display:inline-block;margin-top:6px;cursor:pointer;width:auto">📷 ${T('Upload photo','புகைப்படம் பதிவேற்று')}<input type="file" accept="image/*" style="display:none" onchange="window.YX.pgPhoto(this)"></label>`}</div></div></div>
+ <div class="tabs">${tabs.map(x=>`<button class="${PG.tab===x[0]?'on':''}" onclick="window.YX.pgTab('${x[0]}')">${x[1]}</button>`).join('')}</div>`+
+ (PG.tab==='tests'?'':pgBox())+({day:tabDay,prog:tabProg,tests:tabTests,det:tabDet}[PG.tab])(s);
+}
+V.pgrid=async()=>{
+ await loadStu();
+ const act=STU.filter(s=>s.active!==false);
+ if(PG.sid){const s=STU.find(x=>x.id===PG.sid);if(s){await pgLoad(s);pgStudent(s);return}PG.sid=''}
+ if(PG.c){
+  const l=act.filter(s=>s.cls===PG.c);
+  $('v').innerHTML=`<button class="btn sm gr" style="margin-bottom:10px" onclick="window.YX.pgc('')">← ${T('Back','பின்')}</button><h1 class="pgt">${T('Class','வகுப்பு')} ${esc(PG.c)}</h1>`+(l.map(s=>`<div class="card srow2" onclick="window.YX.pgOpen('${s.id}','prog')">${avt2(s,44)}<div style="flex:1"><b>${esc(s.name)}</b><div class="mut">${esc(s.school||'')}</div></div><span style="font-size:22px;color:#8a94ab">›</span></div>`).join('')||`<div class="card mut">${T('No students in this class.','இந்த வகுப்பில் மாணவர்கள் இல்லை.')}</div>`);
+  return;
+ }
+ $('v').innerHTML=`<h1 class="pgt">${T('Progress Reports','முன்னேற்ற அறிக்கைகள்')}</h1><div class="pgg">${CLASSES.map(c=>{const n=act.filter(s=>s.cls===c).length;return `<button onclick="window.YX.pgc('${c}')"><b>${c}</b><span>${n} ${T('students','மாணவர்கள்')}</span></button>`}).join('')}</div>`;
+};
+/* ---- actions ---- */
+const pgGo=()=>{TAB='pgrid';SHEET=null;viewHome()};
+async function pgSaveTests(){
+ const s=STU.find(x=>x.id===PG.sid);if(!s)return;const g=i=>$(i).value.trim();const d=g('t_d'),mx=Number(g('t_x'));
+ if(!d||!(mx>0))return m2(T('Enter date and total marks.','தேதி, மொத்த மதிப்பெண் உள்ளிடவும்.'));
+ if(d>today())return m2(T('Date cannot be in the future.','எதிர்கால தேதி கூடாது.'));
+ if(ME.role==='teacher'&&d<pAddD(today(),-3))return m2(T('This date is older than 3 days — locked. Ask the owner.','இந்த தேதி 3 நாட்களுக்கு மேல் பழையது — பூட்டப்பட்டது. உரிமையாளரிடம் கேட்கவும்.'));
+ const add=[];let bad=false;
+ SUBJ(s.cls).forEach((z,i)=>{const v=g('tm_'+i);if(v==='')return;if(/^a$/i.test(v)){add.push({z,m:null,ab:true});return}const n=Number(v);if(!(n>=0&&n<=mx))bad=true;add.push({z,m:n,ab:false})});
+ if(bad||!add.length)return m2(T('Enter valid marks for at least one subject.','குறைந்தது ஒரு பாடத்துக்கு சரியான மதிப்பெண் உள்ளிடவும்.'));
+ try{
+  for(const a of add)await setDoc(doc(fs,'marks',s.id+'_'+d+'_'+a.z.replace(/ /g,'')),{sid:s.id,cls:s.cls,parentPhone:s.parentPhone,subject:a.z,max:mx,m:a.m,ab:a.ab,date:d,exam:'Test',pub:ME.role==='owner',by:ME.name,at:serverTimestamp()});
+  PG.tf=null;PG.msg=T(add.length+' subject marks saved.',add.length+' பாட மதிப்பெண்கள் சேமிக்கப்பட்டன.')+(ME.role==='teacher'?' '+T('The owner has been notified to approve.','உரிமையாளருக்கு ஒப்புதலுக்காகத் தெரிவிக்கப்பட்டது.'):'');
+  await V.pgrid();
+ }catch(e){m2(String(e&&e.code||'').includes('permission')?T('These marks are already published. Only the owner can change them.','இந்த மதிப்பெண்கள் ஏற்கெனவே வெளியிடப்பட்டவை. உரிமையாளர் மட்டுமே மாற்ற முடியும்.'):errText(e))}
+}
+async function pgSaveEdit(id){
+ const v=$('e_m').value.trim(),mx=Number($('e_x').value),ab=/^a$/i.test(v),n=Number(v);
+ if(!(mx>0)||(!ab&&(v===''||!(n>=0&&n<=mx))))return m2(T('Enter valid marks.','சரியான மதிப்பெண்களை உள்ளிடவும்.'));
+ try{await updateDoc(doc(fs,'marks',id),{m:ab?null:n,max:mx,ab});PG.tf=null;PG.msg=T('Saved.','சேமிக்கப்பட்டது.');await V.pgrid()}catch(e){m2(errText(e))}
+}
+async function pgDel(id){
+ if(!confirm(T('Delete this mark?','இந்த மதிப்பெண்ணை நீக்கவா?')))return;
+ try{await deleteDoc(doc(fs,'marks',id));await V.pgrid()}catch(e){alert(errText(e))}
+}
+async function pgRmSave(){
+ const s=STU.find(x=>x.id===PG.sid);if(!s)return;const t=$('rm_t').value.trim();
+ try{await setDoc(doc(fs,'remarks',s.id+'__'+PG.pm),{sid:s.id,pm:PG.pm,t,by:ME.name,parentPhone:s.parentPhone,at:serverTimestamp()});PG.msg=T('Remark saved.','ரிமார்க் சேமிக்கப்பட்டது.');await V.pgrid()}catch(e){PG.msg='!'+errText(e);await V.pgrid()}
+}
+async function pgPhoto(inp){
+ const f=inp.files[0];if(!f)return;const s=STU.find(x=>x.id===PG.sid);
+ try{const d=await shrinkImg(f,128,.6);await updateDoc(doc(fs,'students',s.id),{photo:d});PG.msg=T('Photo saved.','புகைப்படம் சேமிக்கப்பட்டது.');await V.pgrid()}catch(e){PG.msg='!'+errText(e);await V.pgrid()}
+}
+async function pgDetSave(){
+ const s=STU.find(x=>x.id===PG.sid);const n=$('d_n').value.trim();if(!n)return m2(T('Enter the name.','பெயரை உள்ளிடவும்.'));
+ try{await updateDoc(doc(fs,'students',s.id),{name:n,cls:$('d_c').value,school:$('d_s').value.trim(),parentName:$('d_p').value.trim()});PG.ed=false;PG.msg=T('Saved.','சேமிக்கப்பட்டது.');await V.pgrid()}catch(e){m2(errText(e))}
+}
+function pgPdf(){
+ const s=STU.find(x=>x.id===PG.sid),P=pData(s,PG.pm),rk=PD.rm[PG.pm],a=P.att;
+ printRep(s.name+' — '+P.label,[
+  {name:T('Student','மாணவர்'),rows:[[T('Name','பெயர்'),s.name],[T('Class','வகுப்பு'),s.cls],[T('School','பள்ளி'),s.school||''],[T('Period','காலம்'),fdy(P.from)+' – '+fdy(P.to)],[T('Average marks','சராசரி மதிப்பெண்'),P.overall==null?'—':rnd(P.overall)+'%'],[T('Attendance','வருகை'),a.pct==null?'—':a.pct+'% ('+a.p+'/'+a.cd+')']]},
+  {name:T('Subject-wise','பாடவாரி'),rows:[[T('Subject','பாடம்'),T('Average %','சராசரி %'),T('Tests','தேர்வுகள்')],...P.subs.map(x=>[subN(x.sub),rnd(x.avg)+'%',x.n])]},
+  {name:T('Tests','தேர்வுகள்'),rows:[[T('Date','தேதி'),T('Subject','பாடம்'),T('Marks','மதிப்பெண்'),'%'],...P.tests.slice().sort((x,y)=>x.date<y.date?-1:1).map(x=>[fmtD(x.date),subN(x.subject),x.m+'/'+x.max,rnd(pcn(x))+'%'])]},
+  {name:T('Summary','சுருக்கம்'),rows:[[autoNote(s,P,PG.pm)]]},
+  {name:T("Teacher's remark",'ஆசிரியர் ரிமார்க்'),rows:[[rk&&rk.t?rk.t:'—']]}]);
+}
+function pgPdfDay(){
+ const s=STU.find(x=>x.id===PG.sid),r=PD.att.filter(x=>x.date.startsWith(PG.am)).sort((a,b)=>a.date<b.date?-1:1);
+ printRep(s.name+' — '+T('Attendance','வருகை')+' '+mLab(PG.am),[{name:mLab(PG.am),rows:[[T('Date','தேதி'),T('Status','நிலை'),T('In','வருகை'),T('Out','புறப்பாடு')],...r.map(x=>[fmtD(x.date),x.st==='P'?T('Present','வந்தார்'):T('Absent','வரவில்லை'),x.in||'',x.out||''])]}]);
+}
+/* ---- owner approval of marks ---- */
+exCard=async function(){
+ let ms=[];try{const q=await getDocs(query(collection(fs,'marks'),where('pub','==',false)));q.forEach(d=>ms.push({id:d.id,...d.data()}))}catch(e){return ''}
+ if(!ms.length)return '';
+ const g={};ms.forEach(x=>{const k=x.cls+'|'+x.date+'|'+(x.by||'');(g[k]=g[k]||[]).push(x)});
+ MGK=Object.keys(g).sort();MGV=g;
+ return `<div class="card" style="border:2px solid var(--acc)"><h2>${T('Marks waiting for approval','ஒப்புதலுக்கு காத்திருக்கும் மதிப்பெண்கள்')} (${MGK.length})</h2>${MGK.map((k,i)=>{const a=g[k],p=k.split('|');return `<div class="row"><b>${T('Class','வகுப்பு')} ${esc(p[0])} · ${fmtD(p[1])}<br><span class="mut">${esc(p[2])} · ${new Set(a.map(x=>x.sid)).size} ${T('students','மாணவர்கள்')} · ${a.length} ${T('marks','மதிப்பெண்கள்')}</span></b><button class="btn sm" onclick="window.YX.mrev(${i})">${T('Review','சரிபார்')} →</button></div>`}).join('')}</div>`;
+};
+let MCUR=-1;
+V.mrev=async()=>{
+ await loadStu();const k=MGK[MCUR],a=MGV[k];
+ if(!a){TAB='home';return viewHome()}
+ const p=k.split('|'),by={};a.forEach(x=>(by[x.sid]=by[x.sid]||[]).push(x));
+ $('v').innerHTML=`<button class="btn sm gr" style="margin-bottom:10px" onclick="window.YX.tab('home')">← ${T('Back','பின்')}</button><h1 class="pgt">${T('Class','வகுப்பு')} ${esc(p[0])} · ${fmtD(p[1])}</h1><p class="mut">${T('Entered by','உள்ளிட்டவர்')} ${esc(p[2])}</p><div id="m2"></div>`+
+  Object.keys(by).map(sid=>{const s=STU.find(z=>z.id===sid);return `<div class="card"><b>${esc(s?s.name:sid)}</b><div style="margin-top:6px">${by[sid].map(x=>`<span class="tag" style="margin:2px;display:inline-block">${esc(subN(x.subject))}: ${x.ab?T('Absent','வரவில்லை'):x.m+'/'+x.max}</span>`).join('')}</div></div>`}).join('')+
+  `<button class="btn" style="background:var(--acc);color:#16223b" onclick="window.YX.mpub()">${T('Approve & publish to parents','ஒப்புதல் அளித்து பெற்றோருக்கு வெளியிடு')}</button><p class="mut">${T('To correct a mark, open Progress Reports → the student → Tests, then come back here.','மதிப்பெண்ணைத் திருத்த: முன்னேற்ற அறிக்கைகள் → மாணவர் → தேர்வுகள் பகுதியில் மாற்றி, பிறகு இங்கே வரவும்.')}</p>`;
+};
+async function mpub(){
+ const a=MGV[MGK[MCUR]];if(!a)return;if(!confirm(T('Publish these marks to parents?','இந்த மதிப்பெண்களை பெற்றோருக்கு வெளியிடவா?')))return;
+ try{for(const x of a)await updateDoc(doc(fs,'marks',x.id),{pub:true});TAB='home';SHEET=null;viewHome()}catch(e){m2(errText(e))}
+}
+/* ---- navigation: teacher menu, roster buttons, parent link ---- */
+const _nv13=navItems;
+navItems=function(){const r=_nv13();if(ME.role==='teacher')return r.filter(x=>!['att','ex'].includes(x[0])).map(x=>x[0]==='pgrid'?['pgrid','📈',T('Progress','முன்னேற்றம்')]:x);return r};
+const _ro13=rosterHtml;
+rosterHtml=function(){
+ return _ro13().split('<div class="sc2">').map((c,i)=>{if(!i)return c;const m=c.match(/stMark\('([^']+)'/);if(!m)return '<div class="sc2">'+c;const id=m[1];
+  return '<div class="sc2">'+c.replace(/window\.YX\.stProg\('[^']*'\)/,`window.YX.pgOpen('${id}','prog')`).replace(/window\.YX\.tab\('ex'\)/,`window.YX.pgOpen('${id}','tests')`).replace(/window\.YX\.stAtt\('[^']*'\)/,`window.YX.pgOpen('${id}','day')`)}).join('');
+};
+const _hm14=V.home;
+V.home=async()=>{
+ await _hm14();
+ if(ME.role==='parent'){const cs=[...$('v').querySelectorAll('.sc2')];cs.forEach((c,i)=>{const s=STU[i];if(!s)return;c.insertAdjacentHTML('beforeend',`<div class="t2"><button class="lb" onclick="window.YX.pgOpen('${s.id}','prog')">📈 ${T('Progress','முன்னேற்றம்')}</button><button class="lb" onclick="window.YX.pgOpen('${s.id}','day')">🗓 ${T('Attendance Report','வருகை அறிக்கை')}</button></div>`)})}
+};
+setTimeout(()=>{const _t=window.YX.tab;Object.assign(window.YX,{
+ tab:k=>{if(k==='pgrid'){PG.c='';PG.sid=''}_t(k)},
+ pgc:c=>{PG.c=c;PG.sid='';pgGo()},
+ pgOpen:(id,tab)=>{const s=STU.find(x=>x.id===id);PG.sid=id;PG.tab=tab||'prog';PG.pm='';PG.am='';PG.tf=null;PG.ed=false;if(s)PG.c=s.cls;pgGo()},
+ pgBack:()=>{PG.sid='';pgGo()},
+ pgTab:(t,nf)=>{PG.tab=t;PG.tf=nf?'new':null;V.pgrid()},
+ pgPt:k=>{PG.pt=k;V.pgrid()},pgPm:k=>{PG.pm=k;V.pgrid()},pgAm:k=>{PG.am=k;V.pgrid()},
+ pgSaveTests,pgSaveEdit,pgDel,pgRmSave,pgPhoto,pgDetSave,pgPdf,pgPdfDay,
+ pgEdit:id=>{PG.tf=id;V.pgrid()},pgDetEdit:b=>{PG.ed=b;V.pgrid()},
+ pgRmAdd:i=>{const e=$('rm_t');if(e)e.value=(e.value?e.value.trim()+' ':'')+RPH[i][L==='ta'?1:0]},
+ mrev:i=>{MCUR=i;TAB='mrev';SHEET=null;viewHome()},mpub})},0);
 async function route(){
  const u=auth.currentUser;
  if(!u){TAB='home';CLS='';STU=[];ATT={};EXID='';return viewLogin()}
