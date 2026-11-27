@@ -135,6 +135,7 @@ const fmtD=d=>{const [y,m,dd]=d.split('-');return dd+'-'+m+'-'+y};
 V.home=async()=>{
  let h=`<div class="card"><h2>${T('Welcome','வணக்கம்')}, ${esc(ME.name||'')}</h2><p class="mut">${esc(ME.phone)} · <span class="tag">${roleName(ME.role)}</span></p></div>`;
  await loadStu();
+ if(ME.role==='owner')h+=await reqCard();
  if(isStaff()){
   await loadAtt(today());const act=STU.filter(s=>s.active!==false);
   const p=act.filter(s=>ATT[s.id]&&ATT[s.id].st==='P').length,a=act.filter(s=>ATT[s.id]&&ATT[s.id].st==='A').length;
@@ -172,13 +173,26 @@ V.stu=async()=>{
  $('sf').onchange=e=>{CLS=e.target.value;V.stu()};
  $('sadd').onclick=addStu;
 };
+async function ensureParentReq(pp,pn,sn){
+ try{await setDoc(doc(fs,'parentReq',pp),{phone:pp,parentName:pn||'',studentName:sn,status:'pending',by:ME.name,at:serverTimestamp()})}catch(e){}
+}
 async function addStu(){
  const name=$('sn').value.trim(),cls=$('sc').value,pn=$('spn').value.trim(),pp=$('spp').value.trim();
- if(!name)return m2(T('Enter the student name.','மாணவர் பெயரை உள்ளிடவும்.'));
- if(!okPhone(pp))return m2(T('Enter a valid 10-digit parent mobile number.','சரியான 10 இலக்க பெற்றோர் மொபைல் எண்ணை உள்ளிடவும்.'));
+ if(!name)return m2(T('Enter the student name.','\u0bae\u0bbe\u0ba3\u0bb5\u0bb0\u0bcd \u0baa\u0bc6\u0baf\u0bb0\u0bc8 \u0b89\u0bb3\u0bcd\u0bb3\u0bbf\u0b9f\u0bb5\u0bc1\u0bae\u0bcd.'));
+ if(!okPhone(pp))return m2(T('Enter a valid 10-digit parent mobile number.','\u0b9a\u0bb0\u0bbf\u0baf\u0bbe\u0ba9 10 \u0b87\u0bb2\u0b95\u0bcd\u0b95 \u0baa\u0bc6\u0bb1\u0bcd\u0bb1\u0bcb\u0bb0\u0bcd \u0bae\u0bca\u0baa\u0bc8\u0bb2\u0bcd \u0b8e\u0ba3\u0bcd\u0ba3\u0bc8 \u0b89\u0bb3\u0bcd\u0bb3\u0bbf\u0b9f\u0bb5\u0bc1\u0bae\u0bcd.'));
  $('sadd').disabled=true;
- try{await setDoc(doc(collection(fs,'students')),{name,cls,parentName:pn,parentPhone:pp,active:true,by:ME.name,at:serverTimestamp()});CLS=cls;await V.stu();m2(T('Student saved.','மாணவர் சேமிக்கப்பட்டார்.'),true)}
- catch(e){m2(errText(e));$('sadd').disabled=false}
+ try{
+  await setDoc(doc(collection(fs,'students')),{name,cls,parentName:pn,parentPhone:pp,active:true,by:ME.name,at:serverTimestamp()});
+  CLS=cls;
+  if(ME.role==='teacher')await ensureParentReq(pp,pn,name);
+  await V.stu();
+  m2(T('Student saved.','\u0bae\u0bbe\u0ba3\u0bb5\u0bb0\u0bcd \u0b9a\u0bc7\u0bae\u0bbf\u0b95\u0bcd\u0b95\u0baa\u0bcd\u0baa\u0b9f\u0bcd\u0b9f\u0bbe\u0bb0\u0bcd.'),true);
+  if(ME.role==='owner'){
+   const us=await getDocs(collection(fs,'users'));let has=false;us.forEach(d=>{const x=d.data();if(x.phone===pp&&x.role==='parent'&&x.active!==false)has=true});
+   if(has)$('m2').innerHTML+=`<div class="msg okm">${T('A parent account already exists for ','\u0b87\u0ba8\u0bcd\u0ba4 \u0b8e\u0ba3\u0bcd\u0ba3\u0bc1\u0b95\u0bcd\u0b95\u0bc1 \u0baa\u0bc6\u0bb1\u0bcd\u0bb1\u0bcb\u0bb0\u0bcd \u0b95\u0ba3\u0b95\u0bcd\u0b95\u0bc1 \u0b8f\u0bb1\u0bcd\u0b95\u0bc6\u0ba9\u0bb5\u0bc7 \u0b89\u0bb3\u0bcd\u0bb3\u0ba4\u0bc1: ')}${esc(pp)}</div>`;
+   else{PEND[pp]={phone:pp,parentName:pn,studentName:name};$('m2').innerHTML+=`<button class="btn" onclick="window.YX.pinFor('${pp}')">${T('Create parent PIN','\u0baa\u0bc6\u0bb1\u0bcd\u0bb1\u0bcb\u0bb0\u0bcd PIN \u0b89\u0bb0\u0bc1\u0bb5\u0bbe\u0b95\u0bcd\u0b95\u0bc1')}</button><div id="pnl"></div>`}
+  }
+ }catch(e){m2(errText(e));$('sadd').disabled=false}
 }
 V.att=async()=>{
  await loadStu();await loadAtt(today());
@@ -211,14 +225,39 @@ async function outAll(){
 }
 async function stuOff(id,on){try{await updateDoc(doc(fs,'students',id),{active:on});await V.stu()}catch(e){m2(errText(e))}}
 V.acc=async()=>{
- $('v').innerHTML=`<div class="card"><h2>${T('Create account','கணக்கு உருவாக்கு')}</h2>
-  <label>${T('Name','பெயர்')}</label><input id="nn">
-  <label>${T('Role','பங்கு')}</label><select id="rl"><option value="teacher">${T('Teacher','ஆசிரியர்')}</option><option value="parent">${T('Parent','பெற்றோர்')}</option></select>
-  <label>${T('Mobile number (login id)','மொபைல் எண் (உள்நுழைவு)')}</label><input id="np" inputmode="numeric" maxlength="10">
-  <div id="m2"></div><button class="btn" id="mk">${T('Generate PIN & create','PIN உருவாக்கி கணக்கு அமை')}</button><div id="out"></div></div>
-  <div class="card"><h2>${T('Accounts','கணக்குகள்')}</h2><div id="ul" class="mut">…</div></div>`;
+ $('v').innerHTML=`<div class="card"><h2>${T('Create teacher account','\u0b86\u0b9a\u0bbf\u0bb0\u0bbf\u0baf\u0bb0\u0bcd \u0b95\u0ba3\u0b95\u0bcd\u0b95\u0bc1 \u0b89\u0bb0\u0bc1\u0bb5\u0bbe\u0b95\u0bcd\u0b95\u0bc1')}</h2>
+  <p class="mut">${T('Parent accounts are created from the Students tab.','\u0baa\u0bc6\u0bb1\u0bcd\u0bb1\u0bcb\u0bb0\u0bcd \u0b95\u0ba3\u0b95\u0bcd\u0b95\u0bc1\u0b95\u0bb3\u0bcd \u0bae\u0bbe\u0ba3\u0bb5\u0bb0\u0bcd\u0b95\u0bb3\u0bcd \u0ba4\u0ba4\u0bcd\u0ba4\u0bb2\u0bbf\u0bb2\u0bcd \u0b89\u0bb0\u0bc1\u0bb5\u0bbe\u0b95\u0bc1\u0bae\u0bcd.')}</p>
+  <label>${T('Name','\u0baa\u0bc6\u0baf\u0bb0\u0bcd')}</label><input id="nn">
+  <select id="rl" style="display:none"><option value="teacher">teacher</option></select>
+  <label>${T('Mobile number (login id)','\u0bae\u0bca\u0baa\u0bc8\u0bb2\u0bcd \u0b8e\u0ba3\u0bcd (\u0b89\u0bb3\u0bcd\u0ba8\u0bc1\u0bb4\u0bc8\u0bb5\u0bc1)')}</label><input id="np" inputmode="numeric" maxlength="10">
+  <div id="m2"></div><button class="btn" id="mk">${T('Generate PIN & create','PIN \u0b89\u0bb0\u0bc1\u0bb5\u0bbe\u0b95\u0bcd\u0b95\u0bbf \u0b95\u0ba3\u0b95\u0bcd\u0b95\u0bc1 \u0b85\u0bae\u0bc8')}</button><div id="out"></div></div>
+  <div class="card"><h2>${T('Accounts','\u0b95\u0ba3\u0b95\u0bcd\u0b95\u0bc1\u0b95\u0bb3\u0bcd')}</h2><div id="ul" class="mut">\u2026</div></div>`;
  $('mk').onclick=mkAccount;listUsers();
 };
+let PEND={};
+async function reqCard(){
+ let rows=[];
+ try{const q=await getDocs(collection(fs,'parentReq'));PEND={};q.forEach(d=>{const x=d.data();if(x.status==='pending'){rows.push(x);PEND[x.phone]=x}})}catch(e){return ''}
+ if(!rows.length)return '';
+ return `<div class="card" style="border:2px solid var(--acc)"><h2>${T('Action needed','\u0ba8\u0b9f\u0bb5\u0b9f\u0bbf\u0b95\u0bcd\u0b95\u0bc8 \u0ba4\u0bc7\u0bb5\u0bc8')} (${rows.length})</h2>
+ ${rows.map(x=>`<div class="row"><b>${T('Parent account needed','\u0baa\u0bc6\u0bb1\u0bcd\u0bb1\u0bcb\u0bb0\u0bcd \u0b95\u0ba3\u0b95\u0bcd\u0b95\u0bc1 \u0ba4\u0bc7\u0bb5\u0bc8')}<br><span class="mut">${esc(x.parentName||'')} ${esc(x.phone)} · ${esc(x.studentName||'')} · ${T('added by','\u0b9a\u0bc7\u0bb0\u0bcd\u0ba4\u0bcd\u0ba4\u0bb5\u0bb0\u0bcd')} ${esc(x.by||'')}</span></b><button class="btn sm" onclick="window.YX.pinFor('${x.phone}')">${T('Create PIN','PIN \u0b89\u0bb0\u0bc1\u0bb5\u0bbe\u0b95\u0bcd\u0b95\u0bc1')}</button></div>`).join('')}<div id="pnl"></div></div>`;
+}
+async function pinFor(pp){
+ const r=PEND[pp]||{phone:pp,parentName:''};const nm=r.parentName||T('Parent','\u0baa\u0bc6\u0bb1\u0bcd\u0bb1\u0bcb\u0bb0\u0bcd');
+ try{
+  const pin=await mkUser(pp,nm,'parent',1);
+  try{await setDoc(doc(fs,'parentReq',pp),{phone:pp,parentName:r.parentName||'',studentName:r.studentName||'',status:'done',by:ME.name,at:serverTimestamp()})}catch(e){}
+  const msgTxt=T('Y Axis Tuition parent app: yaxistuition.com/app  Mobile: '+pp+'  PIN: '+pin,'Y Axis Tuition \u0baa\u0bc6\u0bb1\u0bcd\u0bb1\u0bcb\u0bb0\u0bcd \u0b86\u0baa\u0bcd: yaxistuition.com/app  \u0bae\u0bca\u0baa\u0bc8\u0bb2\u0bcd: '+pp+'  PIN: '+pin);
+  window.__msg=msgTxt;
+  $('pnl').innerHTML=`<div class="msg okm">${T('Account created for','\u0b95\u0ba3\u0b95\u0bcd\u0b95\u0bc1 \u0b89\u0bb0\u0bc1\u0bb5\u0bbe\u0ba9\u0ba4\u0bc1:')} ${esc(nm)} (${esc(pp)})<div class="pin">${pin}</div><span class="mut">${T('Shown only once. Share it with the parent.','\u0b92\u0bb0\u0bc1\u0bae\u0bc1\u0bb1\u0bc8 \u0bae\u0b9f\u0bcd\u0b9f\u0bc1\u0bae\u0bcd \u0b95\u0bbe\u0b9f\u0bcd\u0b9f\u0baa\u0bcd\u0baa\u0b9f\u0bc1\u0bae\u0bcd. \u0baa\u0bc6\u0bb1\u0bcd\u0bb1\u0bcb\u0bb0\u0bbf\u0b9f\u0bae\u0bcd \u0baa\u0b95\u0bbf\u0bb0\u0bb5\u0bc1\u0bae\u0bcd.')}</span>
+  <a class="btn" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/91${pp}?text=${encodeURIComponent(msgTxt)}">WhatsApp</a>
+  <button class="btn gr" onclick="window.YX.copyMsg()">${T('Copy message','\u0b9a\u0bc6\u0baf\u0bcd\u0ba4\u0bbf\u0baf\u0bc8 \u0ba8\u0b95\u0bb2\u0bc6\u0b9f\u0bc1')}</button></div>`;
+ }catch(e){
+  if((e.code||'').includes('email-already-in-use')){try{await setDoc(doc(fs,'parentReq',pp),{phone:pp,parentName:r.parentName||'',studentName:r.studentName||'',status:'done',by:ME.name,at:serverTimestamp()})}catch(x){}}
+  const box=$('pnl');if(box)box.innerHTML=`<div class="msg err">${esc(errText(e))} ${(e.code||'').includes('email-already-in-use')?T('Use New PIN in the Accounts tab.','\u0b95\u0ba3\u0b95\u0bcd\u0b95\u0bc1\u0b95\u0bb3\u0bcd \u0ba4\u0ba4\u0bcd\u0ba4\u0bb2\u0bbf\u0bb2\u0bcd "\u0baa\u0bc1\u0ba4\u0bbf\u0baf PIN" \u0baa\u0baf\u0ba9\u0bcd\u0baa\u0b9f\u0bc1\u0ba4\u0bcd\u0ba4\u0bb5\u0bc1\u0bae\u0bcd.'):''}</div>`;
+ }
+}
+function copyMsg(){try{navigator.clipboard.writeText(window.__msg||'').then(()=>alert(T('Copied','\u0ba8\u0b95\u0bb2\u0bc6\u0b9f\u0bc1\u0b95\u0bcd\u0b95\u0baa\u0bcd\u0baa\u0b9f\u0bcd\u0b9f\u0ba4\u0bc1')),()=>{})}catch(e){}}
 function m2(t,ok){$('m2').innerHTML=t?`<div class="msg ${ok?'okm':'err'}">${esc(t)}</div>`:''}
 async function mkUser(ph,name,role,v){
  // secondary app instance so the owner stays signed in
@@ -271,6 +310,6 @@ async function route(){
  if(ME.role==='parent'||(TAB==='acc'&&ME.role!=='owner'))TAB='home';
  viewHome();
 }
-window.YX={lang:()=>setLang(L==='ta'?'en':'ta'),setup:viewSetup,route,toggle,reset,tab:k=>{TAB=k;viewHome()},cls:c=>{CLS=c;V.att()},mark,outAll,stuOff};
+window.YX={lang:()=>setLang(L==='ta'?'en':'ta'),setup:viewSetup,route,toggle,reset,tab:k=>{TAB=k;viewHome()},cls:c=>{CLS=c;V.att()},mark,outAll,stuOff,pinFor,copyMsg};
 onAuthStateChanged(auth,async u=>{if(busy)return;ME=null;route()});
 </script></body></html>
