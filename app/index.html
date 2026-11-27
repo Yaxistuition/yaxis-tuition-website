@@ -1201,6 +1201,61 @@ async function stOut2(list){
 }
 const stOutAll2=()=>stOut2(STU),stOutCls2=c=>stOut2(STU.filter(s=>s.cls===c));
 setTimeout(()=>Object.assign(window.YX,{addRow:()=>{const b=$('stb');b.insertAdjacentHTML('beforeend',stuRow(b.children.length+1))},reqAcc:ph=>{ACREQ=ph;ACPRE=PEND[ph]||{phone:ph};TAB='acc';SHEET=null;viewHome()},stAddOpen,stuAdd,stAtt,stProg:c=>{PGC=c;TAB='pgrid';SHEET=null;viewHome()},stOutAll:stOutAll2,stOutCls:stOutCls2}),0);
+/* ---- stage 13: owner Add student -> Manage Accounts; all classes shown; teacher multi-student save ---- */
+let ACGO=false;
+const dShort=d=>{try{return new Date(d+'T00:00:00').toLocaleDateString(T('en-GB','ta-IN'),{weekday:'short',day:'numeric',month:'short'})}catch(e){return d}};
+const _acc12=V.acc;
+V.acc=async()=>{const go=ACGO;ACGO=false;await _acc12();if(go){ACAT='p';acForm();$('cra').open=true;$('cra').scrollIntoView({behavior:'smooth'})}};
+rosterHtml=function(){
+ const act=STU.filter(s=>s.active!==false),by={};act.forEach(s=>(by[s.cls]=by[s.cls]||[]).push(s));
+ const addb=`<button class="addb" onclick="window.YX.stAddOpen()">+ ${T('Add student','மாணவரைச் சேர்')}</button>`;
+ const tot=act.filter(s=>ATT[s.id]&&ATT[s.id].st==='P'&&!ATT[s.id].out).length;
+ return `<div class="card"><b style="color:var(--pri)">${T('Check-out for everyone','அனைவருக்கும் வெளியேறு')}</b><button class="btn" style="margin-top:8px" onclick="window.YX.stOutAll()">⏏ ${T('Check-out all classes (now)','அனைத்து வகுப்பும் வெளியே (இப்போது)')}</button><p class="mut" style="margin:8px 0 0">${T('Checks out every student who is checked in and not yet out; students with no check-in become Absent. Parents are notified. Each class also has its own button.','உள்ளே வந்து இன்னும் வெளியேறாத அனைவரும் வெளியேறியதாகக் குறிக்கப்படுவர்; வருகை குறிக்காதவர்கள் வரவில்லை எனக் குறிக்கப்படுவர். பெற்றோருக்குத் தெரிவிக்கப்படும். ஒவ்வொரு வகுப்புக்கும் தனிப் பட்டனும் உண்டு.')} (${tot})</p></div>
+ <div class="cch">${CLASSES.map(c=>`<button onclick="document.getElementById('cl_${c}').scrollIntoView({behavior:'smooth',block:'start'})">${T('Class','வகுப்பு')} ${c}</button>`).join('')}</div>${addb}`+
+ CLASSES.map(c=>{const L2=by[c]||[],inn=L2.filter(s=>ATT[s.id]&&ATT[s.id].st==='P').length;
+  return `<div class="cbar" id="cl_${c}"><span>${T('Class','வகுப்பு')} ${c} · ${inn}/${L2.length} ${T('in','உள்ளே')}</span>${L2.length?`<button class="btn sm" onclick="window.YX.stOutCls('${c}')">⏏ ${T('Check-out class','வகுப்பு வெளியே')}</button>`:''}</div>`+
+  (L2.length?L2.map(s=>{const a=ATT[s.id];return `<div class="sc2"><div class="t1">${avt(s.name)}<div><b>${esc(s.name)}</b><span class="mut" style="font-size:12px">${esc(s.school||'')}${s.school&&s.parentName?' · ':''}${esc(s.parentName||'')} ${phLink(s.parentPhone)}</span></div></div><div class="t2">${stTag(a)}<button class="gb" onclick="window.YX.stMark('${s.id}','in')">✔ ${T('Check-in','வருகை')}</button><button class="rb" onclick="window.YX.stMark('${s.id}','abs')">✖ ${T('Absent','வரவில்லை')}</button>${a&&a.st==='P'&&!a.out?`<button class="ob" onclick="window.YX.stMark('${s.id}','out')">⏏ ${T('Check-out','வெளியே')}</button>`:''}</div>
+  <div class="t2"><button class="lb" onclick="window.YX.stProg('${s.cls}')">📈 ${T('Progress','முன்னேற்றம்')}</button><button class="lb" onclick="window.YX.tab('ex')">✏ ${T('Marks','மதிப்பெண்')}</button><button class="lb" onclick="window.YX.stAtt('${s.id}')">🗓 ${T('Attendance','வருகை')}</button></div><div id="sa_${s.id}"></div></div>`}).join(''):`<div class="card mut">${T('No students','மாணவர் இல்லை')}</div>`)}).join('');
+};
+V.stu=async()=>{
+ await loadStu();await loadAtt(today());
+ $('v').innerHTML=`<div id="sform"></div><div id="sdone"></div><div id="rost">${rosterHtml()}</div>`;pgTitle();
+ const h=document.querySelector('.pgt');if(h)h.textContent+=' · '+dShort(today());
+};
+function stAddOpen2(){
+ if(ME.role==='owner'){ACGO=true;ACREQ='';TAB='acc';SHEET=null;viewHome();return}
+ const f=$('sform');if(f.innerHTML){f.innerHTML='';return}
+ $('sdone').innerHTML='';
+ f.innerHTML=`<div class="card"><h2>${T('Add student','மாணவரைச் சேர்')}</h2><label>${T('Parent name','பெற்றோர் பெயர்')}</label><input id="spn"><label>${T('Parent mobile number','பெற்றோர் மொபைல் எண்')}</label><input id="spp" inputmode="numeric" maxlength="10"><div id="stb">${stuRow(1)}</div><button class="btn gr" onclick="window.YX.addRow()">＋ ${T('Add another student (same parent)','இன்னொரு மாணவரைச் சேர் (அதே பெற்றோர்)')}</button><div id="m2"></div><button class="btn" id="sadd" onclick="window.YX.stuAdd()">${T('Save student','மாணவரைச் சேமி')}</button></div>`;
+ f.scrollIntoView({behavior:'smooth'});
+}
+async function stuSave(){
+ const pn=$('spn').value.trim(),pp=$('spp').value.trim();
+ if(!okPhone(pp))return m2(T('Enter a valid 10-digit parent mobile number.','சரியான 10 இலக்க பெற்றோர் மொபைல் எண்ணை உள்ளிடவும்.'));
+ const rows=[...document.querySelectorAll('#stb .stbk')].map(b=>({name:b.querySelector('.sn').value.trim(),cls:b.querySelector('.sc').value,school:b.querySelector('.ss').value.trim()})).filter(x=>x.name);
+ if(!rows.length)return m2(T('Enter at least one student name.','குறைந்தது ஒரு மாணவர் பெயரை உள்ளிடவும்.'));
+ $('sadd').disabled=true;
+ try{
+  const prev=[];try{const q=await getDocs(query(collection(fs,'students'),where('parentPhone','==',pp)));q.forEach(d=>prev.push(d.data().name))}catch(e){}
+  for(const r of rows)await setDoc(doc(collection(fs,'students')),{name:r.name,cls:r.cls,school:r.school,parentName:pn,parentPhone:pp,active:true,by:ME.name,at:serverTimestamp()});
+  if(ME.role==='teacher')await ensureParentReq(pp,pn,rows.map(r=>r.name).join(', '));
+  await loadStu();await loadAtt(today());
+  $('sform').innerHTML='';
+  $('sdone').innerHTML=`<div class="msg okm">${T('Saved: ','சேமிக்கப்பட்டது: ')}${esc(rows.map(r=>r.name).join(', '))}.${prev.length?' '+T('This parent number already has: ','இந்த பெற்றோர் எண்ணில் ஏற்கெனவே உள்ளவர்: ')+esc(prev.join(', '))+' — '+T('combined under the same parent.','ஒரே பெற்றோரின் கீழ் இணைக்கப்பட்டது.'):''}${ME.role==='teacher'?' '+T('The owner has been notified to create the parent login.','பெற்றோர் உள்நுழைவு உருவாக்க உரிமையாளருக்குத் தெரிவிக்கப்பட்டது.'):''}</div>`;
+  rerost();
+ }catch(e){m2(errText(e));const b=$('sadd');if(b)b.disabled=false}
+}
+reqCard=async function(){
+ let rows=[];
+ try{const q=await getDocs(collection(fs,'parentReq'));const us=await getDocs(collection(fs,'users'));const have=new Set();us.forEach(d=>{const x=d.data();if(x.role==='parent'&&x.active!==false)have.add(x.phone)});
+  await loadStu();PEND={};
+  q.forEach(d=>{const x=d.data();if(x.status!=='pending')return;if(have.has(x.phone)){setDoc(doc(fs,'parentReq',x.phone),{...x,status:'done'}).catch(()=>{});return}
+   const n=STU.filter(s=>s.parentPhone===x.phone).map(s=>s.name);if(n.length)x.studentName=n.join(', ');rows.push(x);PEND[x.phone]=x})}catch(e){return ''}
+ if(!rows.length)return '';
+ return `<div class="card" style="border:2px solid var(--acc)"><h2>${T('Student(s) added — activate parent login','மாணவர்(கள்) சேர்க்கப்பட்டனர் — பெற்றோர் உள்நுழைவை உருவாக்குங்கள்')} (${rows.length})</h2>
+ ${rows.map(x=>`<div class="row"><b>${esc(x.studentName||'')}<br><span class="mut">${esc(x.parentName||'')} ${esc(x.phone)} · ${T('added by','சேர்த்தவர்')} ${esc(x.by||'')}</span></b><button class="btn sm" onclick="window.YX.reqAcc('${x.phone}')">${T('Create account','கணக்கு உருவாக்கு')} →</button></div>`).join('')}</div>`;
+};
+setTimeout(()=>Object.assign(window.YX,{stAddOpen:stAddOpen2,stuAdd:stuSave}),0);
 async function route(){
  const u=auth.currentUser;
  if(!u){TAB='home';CLS='';STU=[];ATT={};EXID='';return viewLogin()}
