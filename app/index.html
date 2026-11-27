@@ -120,7 +120,7 @@ async function loadAtt(date){
 }
 function nav(){
  const tabs=ME.role==='parent'?[['home',T('Home','முகப்பு')]]:[['home',T('Home','முகப்பு')],['stu',T('Students','மாணவர்கள்')],['att',T('Attendance','வருகை')],['ex',T('Exams','தேர்வுகள்')],['sa',ME.role==='owner'?T('Staff','ஆசிரியர் வருகை'):T('My attendance','என் வருகை')]];
- if(ME.role==='owner')tabs.push(['acc',T('Accounts','கணக்குகள்')]);
+ if(ME.role==='owner')tabs.push(['fee',T('Fees','கட்டணம்')],['nt',T('Notices','அறிவிப்புகள்')],['acc',T('Accounts','கணக்குகள்')]);
  return `<div class="tabs">${tabs.map(([k,l])=>`<button class="${k===TAB?'on':''}" onclick="window.YX.tab('${k}')">${l}</button>`).join('')}</div>`;
 }
 const V={};
@@ -135,6 +135,7 @@ const fmtD=d=>{const [y,m,dd]=d.split('-');return dd+'-'+m+'-'+y};
 V.home=async()=>{
  let h=`<div class="card"><h2>${T('Welcome','வணக்கம்')}, ${esc(ME.name||'')}</h2><p class="mut">${esc(ME.phone)} · <span class="tag">${roleName(ME.role)}</span></p></div>`;
  await loadStu();
+ h+=await ntCard();
  if(ME.role==='owner'){h+=await reqCard();h+=await exCard()}
  if(isStaff()){
   await loadAtt(today());const act=STU.filter(s=>s.active!==false);
@@ -143,7 +144,7 @@ V.home=async()=>{
  }else{
   if(!STU.length)h+=`<div class="card mut">${T('No student is linked to your mobile number yet. Please contact the centre.','உங்கள் மொபைல் எண்ணுடன் மாணவர் இணைக்கப்படவில்லை. மையத்தைத் தொடர்புகொள்ளவும்.')}</div>`;
   const q=await getDocs(query(collection(fs,'att'),where('parentPhone','==',ME.phone)));const all=[];q.forEach(d=>all.push(d.data()));
-  MKP=[];try{const mq=await getDocs(query(collection(fs,'marks'),where('parentPhone','==',ME.phone),where('pub','==',true)));mq.forEach(d=>MKP.push(d.data()))}catch(e){}
+  await loadPar();MKP=[];try{const mq=await getDocs(query(collection(fs,'marks'),where('parentPhone','==',ME.phone),where('pub','==',true)));mq.forEach(d=>MKP.push(d.data()))}catch(e){}
   for(const s of STU){
    const rec=all.filter(x=>x.sid===s.id).sort((a,b)=>b.date<a.date?-1:1);
    const todayRec=rec.find(x=>x.date===today());
@@ -152,7 +153,7 @@ V.home=async()=>{
    h+=`<div class="card"><h2>${esc(s.name)} <span class="tag">${T('Class','வகுப்பு')} ${esc(s.cls)}</span></h2>
    <p>${T('Today','இன்று')}: ${stTag(todayRec)}</p>
    <p class="mut">${T('This month','இந்த மாதம்')}: ${P} ${T('present','வருகை')} · ${A} ${T('absent','வரவில்லை')}</p>
-   ${exHtml(s)}<h2 style="margin-top:12px">${T('Attendance report','வருகை அறிக்கை')}</h2>
+   ${exHtml(s)}${feeHtml(s)}<h2 style="margin-top:12px">${T('Attendance report','வருகை அறிக்கை')}</h2>
    ${rec.slice(0,31).map(x=>`<div class="row"><b>${fmtD(x.date)}</b>${stTag(x)}</div>`).join('')||`<p class="mut">${T('No records yet.','பதிவுகள் இல்லை.')}</p>`}</div>`;
   }
  }
@@ -425,6 +426,54 @@ async function addHol(){
  try{await setDoc(doc(fs,'holidays',date),{date,name});await V.sa()}catch(e){$('m3').innerHTML=`<div class="msg err">${esc(errText(e))}</div>`}
 }
 async function delHol(d){try{await deleteDoc(doc(fs,'holidays',d));await V.sa()}catch(e){alert(errText(e))}}
+let MON='',PAYS=[],PAYP=[],UPI='',NOT=[];
+const rs=n=>'₹'+(Number(n)||0);
+async function loadUpi(){try{const d=await getDoc(doc(fs,'meta','pay'));UPI=d.exists()?(d.data().upi||''):''}catch(e){UPI=''}}
+async function loadPar(){await loadUpi();PAYP=[];try{const q=await getDocs(query(collection(fs,'pay'),where('parentPhone','==',ME.phone)));q.forEach(d=>PAYP.push(d.data()))}catch(e){}}
+const feeHtml=s=>{
+ const fee=Number(s.fee)||0,mon=today().slice(0,7);if(!fee&&!PAYP.some(p=>p.sid===s.id))return '';
+ const mine=PAYP.filter(p=>p.sid===s.id),paid=mine.filter(p=>p.month===mon).reduce((a,p)=>a+p.amount,0),bal=Math.max(0,fee-paid);
+ const upi=UPI&&bal>0?`<a class="btn" style="display:block;text-align:center;text-decoration:none" href="upi://pay?pa=${encodeURIComponent(UPI)}&pn=${encodeURIComponent('Y Axis Tuition')}&am=${bal}&cu=INR&tn=${encodeURIComponent('Fees '+s.name)}">${T('Pay via UPI','UPI மூலம் செலுத்து')} ${rs(bal)}</a><p class="mut">${T('After paying, the centre will mark it as paid.','செலுத்திய பிறகு மையம் அதைப் பதிவு செய்யும்.')}</p>`:'';
+ return `<h2 style="margin-top:12px">${T('Fees','கட்டணம்')} · ${mon}</h2><div class="row"><b>${T('Monthly fee','மாத கட்டணம்')}</b><span class="tag">${rs(fee)}</span></div><div class="row"><b>${T('Paid','செலுத்தியது')}</b><span class="tag ok">${rs(paid)}</span></div><div class="row"><b>${T('Balance','நிலுவை')}</b><span class="tag ${bal?'off':'ok'}">${rs(bal)}</span></div>${upi}
+ ${mine.sort((a,b)=>a.date<b.date?1:-1).slice(0,6).map(p=>`<div class="row"><b>${fmtD(p.date)}<br><span class="mut">${esc(p.month)}</span></b><span class="tag ok">${rs(p.amount)}</span></div>`).join('')}`};
+async function loadNot(){try{const q=await getDocs(collection(fs,'notices'));NOT=[];q.forEach(d=>NOT.push({id:d.id,...d.data()}));NOT.sort((a,b)=>(a.date||'')<(b.date||'')?1:-1)}catch(e){NOT=[]}}
+async function ntCard(){
+ await loadNot();if(!NOT.length)return '';
+ return `<div class="card"><h2>${T('Notices','அறிவிப்புகள்')}</h2>${NOT.slice(0,5).map(n=>`<div class="row" style="display:block"><b>${esc(n.title)}</b> <span class="mut">${fmtD(n.date)}</span><br><span style="white-space:pre-wrap">${esc(n.body||'')}</span></div>`).join('')}</div>`;
+}
+V.nt=async()=>{
+ await loadNot();
+ $('v').innerHTML=`<div class="card"><h2>${T('New notice','புதிய அறிவிப்பு')}</h2><label>${T('Title','தலைப்பு')}</label><input id="nt"><label>${T('Message','செய்தி')}</label><textarea id="nb" rows="4" style="width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font:inherit"></textarea><div id="m2"></div><button class="btn" onclick="window.YX.addNt()">${T('Post to everyone','அனைவருக்கும் வெளியிடு')}</button></div>
+ <div class="card"><h2>${T('Notices','அறிவிப்புகள்')} (${NOT.length})</h2>${NOT.map(n=>`<div class="row"><b>${esc(n.title)}<br><span class="mut">${fmtD(n.date)}</span></b><button class="btn sm gr" onclick="window.YX.delNt('${n.id}')">${T('Remove','நீக்கு')}</button></div>`).join('')||`<p class="mut">-</p>`}</div>`;
+};
+async function addNt(){
+ const title=$('nt').value.trim(),body=$('nb').value.trim();if(!title)return m2(T('Enter a title.','தலைப்பை உள்ளிடவும்.'));
+ try{await setDoc(doc(collection(fs,'notices')),{title,body,date:today(),by:ME.name,at:serverTimestamp()});await V.nt()}catch(e){m2(errText(e))}
+}
+async function delNt(id){try{await deleteDoc(doc(fs,'notices',id));await V.nt()}catch(e){alert(errText(e))}}
+async function loadPay(){const q=await getDocs(query(collection(fs,'pay'),where('month','==',MON)));PAYS=[];q.forEach(d=>PAYS.push({id:d.id,...d.data()}))}
+V.fee=async()=>{
+ if(!MON)MON=today().slice(0,7);
+ await loadStu();await loadPay();await loadUpi();
+ const act=STU.filter(s=>s.active!==false),pd=s=>PAYS.filter(p=>p.sid===s.id).reduce((a,p)=>a+p.amount,0);
+ const exp=act.reduce((a,s)=>a+(Number(s.fee)||0),0),col=act.reduce((a,s)=>a+pd(s),0);
+ $('v').innerHTML=`<div class="card"><h2>${T('Fees','கட்டணம்')}</h2><label>${T('Month','மாதம்')}</label><input type="month" value="${MON}" onchange="window.YX.monCh(this.value)">
+ <div class="stats" style="margin-top:10px"><div><b>${rs(exp)}</b><span>${T('Expected','எதிர்பார்ப்பு')}</span></div><div><b>${rs(col)}</b><span>${T('Collected','வசூல்')}</span></div><div><b>${rs(Math.max(0,exp-col))}</b><span>${T('Pending','நிலுவை')}</span></div></div><div id="m2"></div></div>
+ <div class="card"><h2>${T('UPI id for parents','பெற்றோருக்கான UPI id')}</h2><input id="upi" value="${esc(UPI)}" placeholder="name@bank"><button class="btn" onclick="window.YX.setUpi()">${T('Save UPI id','UPI id சேமி')}</button></div>
+ <div class="card"><h2>${T('Students','மாணவர்கள்')} (${act.length})</h2>${act.map(s=>{const f=Number(s.fee)||0,p=pd(s);return `<div class="arow"><div class="an"><b>${esc(s.name)}</b><div class="mut">${T('Class','வகுப்பு')} ${esc(s.cls)} · ${T('Fee','கட்டணம்')} ${rs(f)} · ${T('Paid','செலுத்தியது')} ${rs(p)} · <b>${T('Balance','நிலுவை')} ${rs(Math.max(0,f-p))}</b></div></div>
+ <div class="ab"><input id="fe_${s.id}" inputmode="numeric" maxlength="6" placeholder="${T('Fee','கட்டணம்')}" value="${f||''}" style="width:80px"><button class="btn sm gr" onclick="window.YX.setFee('${s.id}')">${T('Set fee','கட்டணம் அமை')}</button>
+ <input id="pa_${s.id}" inputmode="numeric" maxlength="6" placeholder="${T('Amount','தொகை')}" style="width:80px"><button class="btn sm" onclick="window.YX.recPay('${s.id}')">${T('Record payment','செலுத்தியது பதிவு')}</button></div></div>`}).join('')||`<p class="mut">-</p>`}</div>
+ <div class="card"><h2>${T('Payments','பணம் செலுத்தல்கள்')} · ${MON}</h2>${PAYS.sort((a,b)=>a.date<b.date?1:-1).map(p=>`<div class="row"><b>${esc(p.name)}<br><span class="mut">${fmtD(p.date)}</span></b><span class="tag ok">${rs(p.amount)}</span><button class="btn sm gr" onclick="window.YX.delPay('${p.id}')">${T('Remove','நீக்கு')}</button></div>`).join('')||`<p class="mut">-</p>`}</div>`;
+};
+async function monCh(v){if(/^\d{4}-\d{2}$/.test(v)){MON=v;V.fee()}}
+async function setFee(id){const n=Number($('fe_'+id).value);if(!(n>=0&&n<=100000))return m2(T('Enter a valid fee.','சரியான கட்டணத்தை உள்ளிடவும்.'));try{await updateDoc(doc(fs,'students',id),{fee:n});await V.fee();m2(T('Fee saved.','கட்டணம் சேமிக்கப்பட்டது.'),true)}catch(e){m2(errText(e))}}
+async function recPay(id){
+ const s=STU.find(x=>x.id===id),n=Number($('pa_'+id).value);if(!s)return;
+ if(!(n>0&&n<=100000&&Number.isInteger(n)))return m2(T('Enter a valid amount.','சரியான தொகையை உள்ளிடவும்.'));
+ try{await setDoc(doc(collection(fs,'pay')),{sid:id,parentPhone:s.parentPhone,name:s.name,cls:s.cls,month:MON,amount:n,date:today(),by:ME.name,at:serverTimestamp()});await V.fee();m2(T('Payment recorded.','பதிவு செய்யப்பட்டது.'),true)}catch(e){m2(errText(e))}
+}
+async function delPay(id){if(!confirm(T('Remove this payment record?','இந்த பதிவை நீக்கவா?')))return;try{await deleteDoc(doc(fs,'pay',id));await V.fee()}catch(e){m2(errText(e))}}
+async function setUpi(){const u=$('upi').value.trim();if(u&&!/^[\w.\-]{2,}@[\w.\-]{2,}$/.test(u))return m2(T('Enter a valid UPI id like name@bank.','name@bank போன்ற சரியான UPI id ஐ உள்ளிடவும்.'));try{await setDoc(doc(fs,'meta','pay'),{upi:u});await V.fee();m2(T('Saved.','சேமிக்கப்பட்டது.'),true)}catch(e){m2(errText(e))}}
 async function route(){
  const u=auth.currentUser;
  if(!u){TAB='home';CLS='';STU=[];ATT={};EXID='';return viewLogin()}
@@ -433,6 +482,6 @@ async function route(){
  if(ME.role==='parent'||(TAB==='acc'&&ME.role!=='owner'))TAB='home';
  viewHome();
 }
-window.YX={lang:()=>setLang(L==='ta'?'en':'ta'),setup:viewSetup,route,toggle,reset,tab:k=>{TAB=k;if(k==='ex')EXID='';viewHome()},cls:c=>{CLS=c;V.att()},mark,outAll,stuOff,pinFor,copyMsg,setCen,saIn,saOut,addHol,delHol,addEx,exOpen,exBack,saveMk,pubEx};
+window.YX={lang:()=>setLang(L==='ta'?'en':'ta'),setup:viewSetup,route,toggle,reset,tab:k=>{TAB=k;if(k==='ex')EXID='';viewHome()},cls:c=>{CLS=c;V.att()},mark,outAll,stuOff,pinFor,copyMsg,monCh,setFee,recPay,delPay,setUpi,addNt,delNt,setCen,saIn,saOut,addHol,delHol,addEx,exOpen,exBack,saveMk,pubEx};
 onAuthStateChanged(auth,async u=>{if(busy)return;ME=null;route()});
 </script></body></html>
