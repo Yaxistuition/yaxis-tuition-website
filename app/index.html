@@ -128,6 +128,12 @@ details.acd{background:#fff;border:1px solid #e6eaf3;border-radius:16px;margin:1
 .chipsr{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}.chipsr button{border:0;background:#e3e8f3;color:var(--pri);padding:10px 14px;border-radius:12px;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;width:auto;margin:0;box-shadow:none}.chipsr button.on{background:var(--pri);color:#fff}.chipsr button.ov{background:#fff0d9;color:#8a5a00}.chipsr button.ov.on{background:#d9822b;color:#fff}
 .bars .br{display:flex;align-items:center;gap:8px;margin:8px 0}.bars .bl{width:96px;font-size:13px;flex:none}.bars .bt{flex:1;height:14px;background:#eaeef6;border-radius:8px;overflow:hidden;display:block}.bars .bt i{display:block;height:100%;border-radius:8px}.bars b{width:44px;text-align:right;font-size:13px}
 .legend{display:flex;flex-wrap:wrap;gap:8px;font-size:11.5px;margin:6px 0}.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px}
+.lnk,.nlk{color:var(--pri);font-weight:700;text-decoration:underline dotted;cursor:pointer}
+.pill{background:#d64545;color:#fff;border-radius:10px;padding:2px 8px;font-size:12px;font-weight:700}
+.bdg{background:#d64545;color:#fff;border-radius:10px;font-size:11px;padding:1px 6px;margin-left:4px;font-weight:800;display:inline-block;line-height:1.3}
+.mrow{display:flex;align-items:center;justify-content:space-between;border:1px solid #e1e6f0;border-radius:12px;padding:10px 12px;margin:8px 0;cursor:pointer;background:#fff}.mrow.on{border:2px solid #2a5bd7}.mrow b{display:block;color:var(--pri)}
+.srch{position:fixed;inset:0;background:rgba(15,25,50,.45);z-index:60;display:flex;justify-content:center;align-items:flex-start;padding:60px 12px}.srch .sbx{background:#fff;border-radius:16px;max-width:560px;width:100%;padding:14px;max-height:80vh;overflow:auto}
+#prt .ph{display:flex;gap:12px;align-items:center;border-bottom:2px solid var(--pri);padding-bottom:8px;margin-bottom:10px}#prt .ph img{width:76px}#prt .pn{font-size:20px;font-weight:800;color:var(--pri)}#prt .pl{color:#1B8F1E;font-weight:700}#prt .pa{font-size:11px;color:#555}#prt,#prt *{-webkit-print-color-adjust:exact;print-color-adjust:exact}#prt .card{break-inside:avoid;box-shadow:none;border:1px solid #dde3ef;margin:8px 0;padding:10px;border-radius:12px}
 </style></head><body><div id="app"><p class="c mut">…</p></div>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
@@ -627,7 +633,7 @@ async function dlX(sheets,name){
  const cl=c=>{let v=String(c==null?'':c);if(/^[=+\-@]/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"'};
  const csv=sheets.map(s=>s.name+'\n'+s.rows.map(r=>r.map(cl).join(',')).join('\n')).join('\n\n');
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download=name+'.csv';document.body.appendChild(a);a.click();a.remove()}
-function printRep(title,secs){let p=$('prt');if(!p){p=document.createElement('div');p.id='prt';document.body.appendChild(p)}p.innerHTML=`<h2>Y Axis Tuition Centre — ${esc(title)}</h2>`+secs.map(s=>`<h3>${esc(s.name)}</h3>${tblH(s.rows)}`).join('');setTimeout(()=>window.print(),60)}
+function printRep(title,secs){let p=$('prt');if(!p){p=document.createElement('div');p.id='prt';document.body.appendChild(p)}p.innerHTML=prHead()+`<h2>${esc(title)}</h2>`+secs.map(s=>`<h3>${esc(s.name)}</h3>${tblH(s.rows)}`).join('');prGo(p)}
 async function repData(m){
  await loadStu();await prep(m);
  const q=await getDocs(query(collection(fs,'att'),where('date','>=',m+'-01'),where('date','<=',m+'-31')));const A=[];q.forEach(d=>A.push(d.data()));
@@ -837,7 +843,7 @@ V.settings=async()=>{
  <label>${T('Sundays','ஞாயிறுகள்')}</label><select id="s_s"><option value="work" ${s.sun==='work'?'selected':''}>${T('Working day unless declared a holiday','விடுமுறையாக அறிவிக்காவிட்டால் வேலை நாள்')}</option><option value="holiday" ${s.sun==='holiday'?'selected':''}>${T('Always a holiday','எப்போதும் விடுமுறை')}</option></select>
  <button class="btn acc" onclick="window.YX.saveSet()">${T('Save settings','சேமி')}</button></div>
  <div class="card"><h2>📍 ${T('Teacher check-in location','ஆசிரியர் வருகை இருப்பிடம்')}</h2><p class="mut">${CEN?T('Set','அமைக்கப்பட்டது')+' · '+T('radius','சுற்றளவு')+' '+CEN.radius+' m':T('Not set. Teachers can check in from anywhere until you set it.','அமைக்கப்படவில்லை. அமைக்கும் வரை ஆசிரியர் எங்கிருந்தும் வருகை குறிக்கலாம்.')}</p>
- <label>${T('Allowed radius (metres)','அனுமதிக்கப்பட்ட சுற்றளவு (மீ)')}</label><input id="rad" inputmode="numeric" maxlength="4" value="${CEN?CEN.radius:100}"><button class="btn" onclick="window.YX.setCen()">${T('Set centre to my current location','என் தற்போதைய இடத்தை மையமாக அமை')}</button><p class="mut">${T('Do this while standing at the centre. Indoor GPS can be off by 20–50 m, so 100 m is recommended.','மையத்தில் நின்றபடி செய்யவும். உள்ளரங்கில் GPS 20–50 மீ தவறலாம்; 100 மீ பரிந்துரை.')}</p></div>
+ <label>${T('Allowed radius (metres)','அனுமதிக்கப்பட்ட சுற்றளவு (மீ)')}</label><input id="rad" inputmode="numeric" maxlength="4" value="${CEN?CEN.radius:250}"><button class="btn" onclick="window.YX.setCen()">${T('Set centre to my current location','என் தற்போதைய இடத்தை மையமாக அமை')}</button><p class="mut">${T('Do this while standing at the centre. Indoor GPS can be off by 20–50 m, so 100 m is recommended.','மையத்தில் நின்றபடி செய்யவும். உள்ளரங்கில் GPS 20–50 மீ தவறலாம்; 100 மீ பரிந்துரை.')}</p></div>
  <div class="card"><h2>💳 ${T('UPI id for parents','பெற்றோருக்கான UPI id')}</h2><input id="upi" value="${esc(UPI)}" placeholder="name@bank"><button class="btn" onclick="window.YX.setUpi()">${T('Save UPI id','UPI id சேமி')}</button></div>
  <div class="card"><h2>🗂️ ${T('Backup (monthly)','காப்புப் பிரதி (மாதம்)')}</h2><p class="mut">${T('The free plan has no automatic backup. Download this Excel once a month and keep it safe.','இலவசத் திட்டத்தில் தானியங்கி காப்புப் பிரதி இல்லை. மாதம் ஒருமுறை இந்த Excel-ஐ பதிவிறக்கி பத்திரமாக வைக்கவும்.')}</p><div class="ab"><button class="btn sm" onclick="window.YX.backup()">📗 ${T('Download all data (Excel)','அனைத்து தரவையும் பதிவிறக்கு (Excel)')}</button></div></div>
  <div class="card"><h2>🌐 ${T('Language','மொழி')}</h2><button class="btn gr" onclick="window.YX.lang()">${L==='ta'?'Switch to English':'தமிழுக்கு மாறு'}</button></div>`;
@@ -1284,6 +1290,7 @@ async function pgLoad(s){
  try{const q=par?query(collection(fs,'marks'),where('parentPhone','==',ME.phone),where('pub','==',true)):query(collection(fs,'marks'),where('sid','==',s.id));(await getDocs(q)).forEach(d=>{const x=d.data();if(x.sid===s.id)PD.marks.push({id:d.id,...x})})}catch(e){}
  try{const q=par?query(collection(fs,'att'),where('parentPhone','==',ME.phone)):query(collection(fs,'att'),where('sid','==',s.id));(await getDocs(q)).forEach(d=>{const x=d.data();if(x.sid===s.id)PD.att.push(x)})}catch(e){}
  try{const q=par?query(collection(fs,'remarks'),where('parentPhone','==',ME.phone)):query(collection(fs,'remarks'),where('sid','==',s.id));(await getDocs(q)).forEach(d=>{const x=d.data();if(x.sid===s.id)PD.rm[x.pm]=x})}catch(e){}
+ PD.marks.forEach(x=>{if(x.subject&&!ALLS.includes(x.subject))ALLS.push(x.subject)});
 }
 const attS=(s,from,to)=>{const r=PD.att.filter(x=>x.date>=from&&x.date<=to);const p=r.filter(x=>x.st==='P').length,a=r.filter(x=>x.st==='A').length;return {p,a,cd:p+a,pct:p+a?rnd(p*100/(p+a)):null}};
 function pData(s,pm){
@@ -1339,7 +1346,7 @@ const pgBox=()=>{const m=PG.msg;PG.msg='';return m?`<div class="msg ${m[0]==='!'
 /* ---- tabs ---- */
 function tabProg(s){
  const par=ME.role==='parent',big=+s.cls>=10,j=joinD(s),t0=today();
- let h=par?'':`<button class="btn" style="background:#1B8F1E" onclick="window.YX.pgTab('tests',true)">＋ ${T('Enter test marks','தேர்வு மதிப்பெண் உள்ளிடு')}</button>`;
+ let h='';
  if(big)h+=`<div class="tabs"><button class="${PG.pt==='w'?'on':''}" onclick="window.YX.pgPt('w')">${T('Weekly','வாராந்திரம்')}</button><button class="${PG.pt!=='w'?'on':''}" onclick="window.YX.pgPt('m')">${T('Monthly / Overall','மாதம் / ஓவரால்')}</button></div>`;
  if(big&&PG.pt==='w'){
   const ws=pAddD(t0,-(((new Date(t0+'T12:00:00')).getDay()+6)%7)-7),we=pAddD(ws,6);
@@ -1350,23 +1357,31 @@ function tabProg(s){
  if(!PG.pm||(PG.pm!=='all'&&!ks.includes(PG.pm)))PG.pm=ks[0];
  h+=`<div class="chipsr">${ks.map(k=>`<button class="${PG.pm===k?'on':''}" onclick="window.YX.pgPm('${k}')">${mLab(k).replace(/ 20(\d\d)$/,' $1')}</button>`).join('')}<button class="${PG.pm==='all'?'on':''} ov" onclick="window.YX.pgPm('all')">${T('Overall','ஓவரால்')}</button></div>`;
  const P=pData(s,PG.pm),a=P.att,rk=PD.rm[PG.pm];
- h+=`<div class="card"><div class="chd">${esc(P.label)}</div><p class="mut" style="margin-top:-6px">${fdy(P.from)} – ${fdy(P.to)}</p>${sumH([P.overall==null?'—':rnd(P.overall)+'%',T('Average marks','சராசரி மதிப்பெண்'),barC(P.overall)],[a.pct==null?'—':a.pct+'%',T('Attendance','வருகை')],[P.tests.length,T('Tests','தேர்வுகள்')])}</div>
+ h+=stCard(s)+`<div class="card"><div class="chd">${esc(P.label)}</div><p class="mut" style="margin-top:-6px">${fdy(P.from)} – ${fdy(P.to)}</p>${sumH([P.overall==null?'—':rnd(P.overall)+'%',T('Average marks','சராசரி மதிப்பெண்'),barC(P.overall)],[a.pct==null?'—':a.pct+'%',T('Attendance','வருகை')],[P.tests.length,T('Tests','தேர்வுகள்')])}</div>
  <div class="card"><b>${T('Subject-wise graph','பாடவாரி வரைபடம்')}</b>${barsH(P.subs)}`;
  if(PG.pm==='all'){const R=monthlyS(P.from,P.to);if(R.series.length&&R.labels.length>1)h+=`<div style="margin-top:12px"><b>${T('Month-by-month trend','மாதவாரி போக்கு')}</b>${chartH(R.labels,R.series)}${trendH(R.labels,R.series)}</div>`}
  h+=`</div><div class="card" style="border-left:4px solid #2a5bd7"><b>${T('Summary (automatic, from marks & attendance)','சுருக்கம் (மதிப்பெண் & வருகையிலிருந்து தானாக)')}</b><p style="margin:6px 0 0">${esc(autoNote(s,P,PG.pm))}</p></div>
- <div class="card" style="border-left:4px solid #f2a900"><b>${T("Teacher's remark",'ஆசிரியர் ரிமார்க்')}</b><p style="margin:6px 0 0">${rk&&rk.t?esc(rk.t)+`<br><small class="mut">— ${esc(rk.by||'')}</small>`:`<span class="mut">${T('No remark yet.','இன்னும் ரிமார்க் இல்லை.')}</span>`}</p></div>`;
- if(!par)h+=`<div class="card"><b>${T('Write / change remark','ரிமார்க் எழுது / மாற்று')}</b><div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">${RPH.map((x,i)=>`<button class="btn sm gr" style="font-size:12px" onclick="window.YX.pgRmAdd(${i})">${esc(x[L==='ta'?1:0])}</button>`).join('')}</div><textarea id="rm_t" rows="3">${rk?esc(rk.t||''):''}</textarea><button class="btn" style="background:#1B8F1E" onclick="window.YX.pgRmSave()">${T('Save remark','ரிமார்க் சேமி')}</button></div>`;
+ <div class="card rmd" style="border-left:4px solid #f2a900"><b>${T("Teacher's remark",'ஆசிரியர் ரிமார்க்')}</b><p style="margin:6px 0 0">${rk&&rk.t?esc(rk.t)+`<br><small class="mut">— ${esc(rk.by||'')}</small>`:`<span class="mut">${T('No remark yet.','இன்னும் ரிமார்க் இல்லை.')}</span>`}</p></div>`;
+ if(!par)h+=`<div class="card"><b>${T("Teacher's remark",'ஆசிரியர் ரிமார்க்')}</b><div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">${RPH.map((x,i)=>`<button class="btn sm gr" style="font-size:12px" onclick="window.YX.pgRmAdd(${i})">${esc(x[L==='ta'?1:0])}</button>`).join('')}</div><textarea id="rm_t" rows="3">${rk?esc(rk.t||''):''}</textarea><button class="btn" style="background:#1B8F1E" onclick="window.YX.pgRmSave()">${T('Save remark','ரிமார்க் சேமி')}</button></div>`;
+ if(!par)h=h.replace(/<div class="card rmd"[\s\S]*?<\/p><\/div>/,'');
  return h+`<button class="btn" style="background:#1B8F1E" onclick="window.YX.pgPdf()">📄 ${T('Report in PDF','PDF அறிக்கை')}</button>`;
 }
+const stCard=s=>`<div class="card"><div style="display:flex;gap:12px;align-items:center">${avt2(s,44)}<div><b>${esc(s.name)}</b><div class="mut">${T('Class','வகுப்பு')} ${esc(s.cls)}${s.school?' · '+esc(s.school):''}</div></div></div></div>`;
+const attC=p=>p==null?'#999':p>=90?'#1B8F1E':p>=75?'#b7791f':'#d64545';
+const wdD=d=>new Date(d+'T12:00:00').toLocaleDateString(L==='ta'?'ta-IN':'en-IN',{weekday:'short',day:'numeric',month:'short'});
+function dayH(s){
+ const r=PD.att.filter(x=>x.date.startsWith(PG.am)).sort((x,y)=>x.date<y.date?1:-1),p=r.filter(x=>x.st==='P').length,ab=r.filter(x=>x.st==='A').length,pct=p+ab?rnd(p*100/(p+ab)):null;
+ return `<div class="card"><div class="chd">${mLab(PG.am)} — ${T('Attendance','வருகை')}</div><div class="sum3"><div><b style="color:${attC(pct)}">${pct==null?'—':pct+'%'}</b>${T('Attendance','வருகை')}</div><div><b>${p}</b>${T('Present','வந்தது')}</div><div><b>${ab}</b>${T('Absent','வராதது')}</div></div><div class="sum3" style="grid-template-columns:1fr"><div><b>${p+ab}</b>${T('Class days','வகுப்பு நாள்')}</div></div></div>
+ <div class="card"><b>${T('Day-wise — in and out','நாள்வாரி — வருகை மற்றும் புறப்பாடு')}</b><table class="xt" style="margin-top:8px"><tr><th>${T('Date','தேதி')}</th><th>${T('In','வருகை')}</th><th>${T('Out','புறப்பாடு')}</th></tr>${r.map(x=>`<tr><td>${esc(wdD(x.date))}</td><td>${x.st==='P'?esc(x.in||'✓'):`<span class="pill">${T('Absent','வரவில்லை')}</span>`}</td><td>${x.st==='P'?esc(x.out||'–'):'–'}</td></tr>`).join('')||`<tr><td colspan="3" class="mut">${T('No records.','பதிவுகள் இல்லை.')}</td></tr>`}</table></div>`;
+}
 function tabDay(s){
- const j=joinD(s),t0=today(),a=attS(s,j,t0);
+ const j=joinD(s),t0=today();
  const ms=[];let m=t0.slice(0,7);const jm=j.slice(0,7);for(let i=0;i<12&&m>=jm;i++){ms.push(m);m=addM(m,-1)}
+ if(!ms.length)ms.push(t0.slice(0,7));
  if(!PG.am||!ms.includes(PG.am))PG.am=ms[0];
- const r=PD.att.filter(x=>x.date.startsWith(PG.am)).sort((x,y)=>x.date<y.date?1:-1),p=r.filter(x=>x.st==='P').length,ab=r.filter(x=>x.st==='A').length;
- return `<div class="card"><b>${T('Attendance so far','இதுவரை வருகை')} — ${a.pct==null?'—':a.pct+'%'}</b>${sumH([a.p,T('Present','வந்தது')],[a.a,T('Absent','வராதது')],[a.cd,T('Class days','வகுப்பு நாள்')])}</div>
- <div class="chipsr">${ms.map(k=>`<button class="${PG.am===k?'on':''}" onclick="window.YX.pgAm('${k}')">${mLab(k).replace(/ 20(\d\d)$/,' $1')}</button>`).join('')}</div>
- <div class="card"><b>${mLab(PG.am)}</b> · ${p} ${T('present','வருகை')} · ${ab} ${T('absent','வரவில்லை')}<table class="xt" style="margin-top:8px"><tr><th>${T('Date','தேதி')}</th><th>${T('Status','நிலை')}</th><th>${T('In','வருகை')}</th><th>${T('Out','புறப்பாடு')}</th></tr>${r.map(x=>`<tr><td>${fmtD(x.date)}</td><td>${x.st==='P'?T('Present','வந்தார்'):T('Absent','வரவில்லை')}</td><td>${esc(x.in||'–')}</td><td>${esc(x.out||'–')}</td></tr>`).join('')||`<tr><td colspan="4" class="mut">${T('No records.','பதிவுகள் இல்லை.')}</td></tr>`}</table></div>
- <button class="btn" style="background:#1B8F1E" onclick="window.YX.pgPdfDay()">📄 ${T('Report in PDF','PDF அறிக்கை')}</button>`;
+ return `<div class="chipsr">${ms.map(k=>`<button class="${PG.am===k?'on':''}" onclick="window.YX.pgAm('${k}')">${mLab(k).replace(/ 20(\d\d)$/,' $1')}</button>`).join('')}</div>`+stCard(s)+dayH(s)+
+ `<button class="btn" style="background:#1B8F1E" onclick="window.YX.pgPdfDay()">📄 ${T('Report in PDF','PDF அறிக்கை')}</button>
+ <div class="card"><b>${T('All months','எல்லா மாதங்கள்')}</b><div class="mut">${T('Tap a month to see every day.','ஒரு மாதத்தைத் தொட்டால் எல்லா நாட்களும் தெரியும்.')}</div>${ms.map(k=>{const a=attS(s,k+'-01',mEnd(k));return `<div class="mrow ${PG.am===k?'on':''}" onclick="window.YX.pgAm('${k}')"><div><b>${mLab(k)}</b><span class="mut">${a.p} ${T('present','வருகை')} · ${a.a} ${T('absent','வரவில்லை')} · ${a.cd} ${T('days','நாட்கள்')}</span></div><b style="color:${attC(a.pct)}">${a.pct==null?'—':a.pct+'%'}</b></div>`}).join('')}</div>`;
 }
 function tabTests(s){
  const l=PD.marks.slice().sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);let h=pgBox();
@@ -1374,7 +1389,7 @@ function tabTests(s){
  if(PG.tf==='new'){
   h+=`<div class="card"><b>${T('New test — subjects of class ','புதிய தேர்வு — வகுப்பு ')}${esc(s.cls)}</b><div class="two"><div><label>${T('Date','தேதி')}</label><input id="t_d" type="date" value="${today()}" max="${today()}"></div><div><label>${T('Out of','மொத்தம்')}</label><input id="t_x" inputmode="numeric" value="50"></div></div>
   <p class="mut">${T('Enter marks only for subjects written (write A for absent). Empty ones are not counted.','எழுதிய பாடங்களுக்கு மட்டும் மதிப்பெண் உள்ளிடவும் (வரவில்லை எனில் A). காலியாக விட்டவை கணக்கில் சேராது.')}${ME.role==='owner'?' '+T('Marks entered by the owner are published to the parent immediately.','உரிமையாளர் உள்ளிடும் மதிப்பெண்கள் உடனே பெற்றோருக்கு வெளியிடப்படும்.'):' '+T('After saving, the owner will approve and publish.','சேமித்த பிறகு உரிமையாளர் ஒப்புதல் அளித்து வெளியிடுவார்.')}</p>
-  ${SUBJ(s.cls).map((z,i)=>`<div style="display:flex;align-items:center;gap:8px;margin-top:6px"><span style="flex:1">${esc(subN(z))}</span><input id="tm_${i}" inputmode="decimal" style="width:90px"></div>`).join('')}
+  ${SUBJ(s.cls).map((z,i)=>`<div style="display:flex;align-items:center;gap:8px;margin-top:6px"><span style="flex:1">${esc(subN(z))}</span><input id="tm_${i}" inputmode="decimal" style="width:90px"></div>`).join('')}<div id="xs"></div><button class="btn sm gr" style="margin-top:8px" onclick="window.YX.pgAddSub()">＋ ${T('Add subject','பாடம் சேர்')}</button>
   <div id="m2"></div><div class="two" style="margin-top:10px"><button class="btn" onclick="window.YX.pgSaveTests()">${T('Save','சேமி')}</button><button class="btn gr" onclick="window.YX.pgTab('tests',false)">${T('Cancel','ரத்து')}</button></div></div>`;
  }
  h+=`<div class="card"><table class="xt"><tr><th>${T('Date','தேதி')}</th><th>${T('Subject','பாடம்')}</th><th>${T('Marks','மதிப்பெண்')}</th><th></th></tr>`;
@@ -1420,9 +1435,10 @@ async function pgSaveTests(){
  if(ME.role==='teacher'&&d<pAddD(today(),-3))return m2(T('This date is older than 3 days — locked. Ask the owner.','இந்த தேதி 3 நாட்களுக்கு மேல் பழையது — பூட்டப்பட்டது. உரிமையாளரிடம் கேட்கவும்.'));
  const add=[];let bad=false;
  SUBJ(s.cls).forEach((z,i)=>{const v=g('tm_'+i);if(v==='')return;if(/^a$/i.test(v)){add.push({z,m:null,ab:true});return}const n=Number(v);if(!(n>=0&&n<=mx))bad=true;add.push({z,m:n,ab:false})});
+ document.querySelectorAll('#xs .xr').forEach(r=>{const z=r.querySelector('.xn').value.trim(),v=r.querySelector('.xv').value.trim();if(!z||v==='')return;if(/^a$/i.test(v)){add.push({z,m:null,ab:true});return}const n=Number(v);if(!(n>=0&&n<=mx))bad=true;add.push({z,m:n,ab:false})});
  if(bad||!add.length)return m2(T('Enter valid marks for at least one subject.','குறைந்தது ஒரு பாடத்துக்கு சரியான மதிப்பெண் உள்ளிடவும்.'));
  try{
-  for(const a of add)await setDoc(doc(fs,'marks',s.id+'_'+d+'_'+a.z.replace(/ /g,'')),{sid:s.id,cls:s.cls,parentPhone:s.parentPhone,subject:a.z,max:mx,m:a.m,ab:a.ab,date:d,exam:'Test',pub:ME.role==='owner',by:ME.name,at:serverTimestamp()});
+  for(const a of add)await setDoc(doc(fs,'marks',s.id+'_'+d+'_'+(a.z.replace(/[^A-Za-z0-9\u0B80-\u0BFF]/g,'')||('S'+a.z.length))),{sid:s.id,cls:s.cls,parentPhone:s.parentPhone,subject:a.z,max:mx,m:a.m,ab:a.ab,date:d,exam:'Test',pub:ME.role==='owner',by:ME.name,at:serverTimestamp()});
   PG.tf=null;PG.msg=T(add.length+' subject marks saved.',add.length+' பாட மதிப்பெண்கள் சேமிக்கப்பட்டன.')+(ME.role==='teacher'?' '+T('The owner has been notified to approve.','உரிமையாளருக்கு ஒப்புதலுக்காகத் தெரிவிக்கப்பட்டது.'):'');
   await V.pgrid();
  }catch(e){m2(String(e&&e.code||'').includes('permission')?T('These marks are already published. Only the owner can change them.','இந்த மதிப்பெண்கள் ஏற்கெனவே வெளியிடப்பட்டவை. உரிமையாளர் மட்டுமே மாற்ற முடியும்.'):errText(e))}
@@ -1448,18 +1464,19 @@ async function pgDetSave(){
  const s=STU.find(x=>x.id===PG.sid);const n=$('d_n').value.trim();if(!n)return m2(T('Enter the name.','பெயரை உள்ளிடவும்.'));
  try{await updateDoc(doc(fs,'students',s.id),{name:n,cls:$('d_c').value,school:$('d_s').value.trim(),parentName:$('d_p').value.trim()});PG.ed=false;PG.msg=T('Saved.','சேமிக்கப்பட்டது.');await V.pgrid()}catch(e){m2(errText(e))}
 }
+const prHead=()=>`<div class="ph"><img src="/assets/images/logo.png" alt=""><div><div class="pn">Y Axis Tuition Centre</div><div class="pl">Melur</div><div class="pa">Alagar Kovil Road, Near BSNL Office, Above RJ Mini Super Market, Melur 625106, Madurai, Tamil Nadu · +91 78455 92859 · www.yaxistuition.com</div></div></div>`;
+function prGo(p){const im=p.querySelector('img'),go=()=>setTimeout(()=>window.print(),120);if(!im||im.complete)go();else{im.onload=im.onerror=go}}
+function prHtml(title,html){let p=$('prt');if(!p){p=document.createElement('div');p.id='prt';document.body.appendChild(p)}p.innerHTML=prHead()+`<h2 style="margin:6px 0">${esc(title)}</h2>`+html;prGo(p)}
 function pgPdf(){
  const s=STU.find(x=>x.id===PG.sid),P=pData(s,PG.pm),rk=PD.rm[PG.pm],a=P.att;
- printRep(s.name+' — '+P.label,[
-  {name:T('Student','மாணவர்'),rows:[[T('Name','பெயர்'),s.name],[T('Class','வகுப்பு'),s.cls],[T('School','பள்ளி'),s.school||''],[T('Period','காலம்'),fdy(P.from)+' – '+fdy(P.to)],[T('Average marks','சராசரி மதிப்பெண்'),P.overall==null?'—':rnd(P.overall)+'%'],[T('Attendance','வருகை'),a.pct==null?'—':a.pct+'% ('+a.p+'/'+a.cd+')']]},
-  {name:T('Subject-wise','பாடவாரி'),rows:[[T('Subject','பாடம்'),T('Average %','சராசரி %'),T('Tests','தேர்வுகள்')],...P.subs.map(x=>[subN(x.sub),rnd(x.avg)+'%',x.n])]},
-  {name:T('Tests','தேர்வுகள்'),rows:[[T('Date','தேதி'),T('Subject','பாடம்'),T('Marks','மதிப்பெண்'),'%'],...P.tests.slice().sort((x,y)=>x.date<y.date?-1:1).map(x=>[fmtD(x.date),subN(x.subject),x.m+'/'+x.max,rnd(pcn(x))+'%'])]},
-  {name:T('Summary','சுருக்கம்'),rows:[[autoNote(s,P,PG.pm)]]},
-  {name:T("Teacher's remark",'ஆசிரியர் ரிமார்க்'),rows:[[rk&&rk.t?rk.t:'—']]}]);
+ let h=stCard(s)+`<div class="card"><div class="chd">${esc(P.label)}</div><p class="mut">${fdy(P.from)} – ${fdy(P.to)}</p>${sumH([P.overall==null?'—':rnd(P.overall)+'%',T('Average marks','சராசரி மதிப்பெண்'),barC(P.overall)],[a.pct==null?'—':a.pct+'%',T('Attendance','வருகை')],[P.tests.length,T('Tests','தேர்வுகள்')])}</div><div class="card"><b>${T('Subject-wise graph','பாடவாரி வரைபடம்')}</b>${barsH(P.subs)}`;
+ if(PG.pm==='all'){const R=monthlyS(P.from,P.to);if(R.series.length&&R.labels.length>1)h+=`<div style="margin-top:10px"><b>${T('Month-by-month trend','மாதவாரி போக்கு')}</b>${chartH(R.labels,R.series)}${trendH(R.labels,R.series)}</div>`}
+ h+=`</div><div class="card" style="border-left:4px solid #2a5bd7"><b>${T('Summary (automatic, from marks & attendance)','சுருக்கம் (மதிப்பெண் & வருகையிலிருந்து தானாக)')}</b><p style="margin:6px 0 0">${esc(autoNote(s,P,PG.pm))}</p></div><div class="card" style="border-left:4px solid #f2a900"><b>${T("Teacher's remark",'ஆசிரியர் ரிமார்க்')}</b><p style="margin:6px 0 0">${rk&&rk.t?esc(rk.t):'—'}</p></div>`;
+ prHtml(s.name+' — '+T('Progress report','முன்னேற்ற அறிக்கை')+' '+P.label,h);
 }
 function pgPdfDay(){
- const s=STU.find(x=>x.id===PG.sid),r=PD.att.filter(x=>x.date.startsWith(PG.am)).sort((a,b)=>a.date<b.date?-1:1);
- printRep(s.name+' — '+T('Attendance','வருகை')+' '+mLab(PG.am),[{name:mLab(PG.am),rows:[[T('Date','தேதி'),T('Status','நிலை'),T('In','வருகை'),T('Out','புறப்பாடு')],...r.map(x=>[fmtD(x.date),x.st==='P'?T('Present','வந்தார்'):T('Absent','வரவில்லை'),x.in||'',x.out||''])]}]);
+ const s=STU.find(x=>x.id===PG.sid);
+ prHtml(s.name+' — '+T('Attendance report','வருகை அறிக்கை')+' '+mLab(PG.am),stCard(s)+dayH(s));
 }
 /* ---- owner approval of marks ---- */
 exCard=async function(){
@@ -1475,7 +1492,7 @@ V.mrev=async()=>{
  if(!a){TAB='home';return viewHome()}
  const p=k.split('|'),by={};a.forEach(x=>(by[x.sid]=by[x.sid]||[]).push(x));
  $('v').innerHTML=`<button class="btn sm gr" style="margin-bottom:10px" onclick="window.YX.tab('home')">← ${T('Back','பின்')}</button><h1 class="pgt">${T('Class','வகுப்பு')} ${esc(p[0])} · ${fmtD(p[1])}</h1><p class="mut">${T('Entered by','உள்ளிட்டவர்')} ${esc(p[2])}</p><div id="m2"></div>`+
-  Object.keys(by).map(sid=>{const s=STU.find(z=>z.id===sid);return `<div class="card"><b>${esc(s?s.name:sid)}</b><div style="margin-top:6px">${by[sid].map(x=>`<span class="tag" style="margin:2px;display:inline-block">${esc(subN(x.subject))}: ${x.ab?T('Absent','வரவில்லை'):x.m+'/'+x.max}</span>`).join('')}</div></div>`}).join('')+
+  Object.keys(by).map(sid=>{const s=STU.find(z=>z.id===sid);return `<div class="card"><b class="lnk" onclick="window.YX.pgOpen('${sid}','tests')">${esc(s?s.name:sid)}</b>${s?`<div class="mut">${T('Class','வகுப்பு')} ${esc(s.cls)}${s.school?' · '+esc(s.school):''}<br>${T('Parent','பெற்றோர்')}: ${esc(s.parentName||'—')}${s.parentPhone?` · <a href="tel:${esc(s.parentPhone)}" style="color:var(--pri)">📞 ${esc(s.parentPhone)}</a>`:''}</div>`:''}<div style="margin-top:6px">${by[sid].map(x=>`<span class="tag" style="margin:2px;display:inline-block">${esc(subN(x.subject))}: ${x.ab?T('Absent','வரவில்லை'):x.m+'/'+x.max}</span>`).join('')}</div></div>`}).join('')+
   `<button class="btn" style="background:var(--acc);color:#16223b" onclick="window.YX.mpub()">${T('Approve & publish to parents','ஒப்புதல் அளித்து பெற்றோருக்கு வெளியிடு')}</button><p class="mut">${T('To correct a mark, open Progress Reports → the student → Tests, then come back here.','மதிப்பெண்ணைத் திருத்த: முன்னேற்ற அறிக்கைகள் → மாணவர் → தேர்வுகள் பகுதியில் மாற்றி, பிறகு இங்கே வரவும்.')}</p>`;
 };
 async function mpub(){
@@ -1506,6 +1523,85 @@ setTimeout(()=>{const _t=window.YX.tab;Object.assign(window.YX,{
  pgEdit:id=>{PG.tf=id;V.pgrid()},pgDetEdit:b=>{PG.ed=b;V.pgrid()},
  pgRmAdd:i=>{const e=$('rm_t');if(e)e.value=(e.value?e.value.trim()+' ':'')+RPH[i][L==='ta'?1:0]},
  mrev:i=>{MCUR=i;TAB='mrev';SHEET=null;viewHome()},mpub})},0);
+/* ---- stage 15: fixes (parent home/alerts, search, name links, geofence) ---- */
+const seenK=()=>'yxseen_'+(ME.phone||'');
+const seenGet=()=>{try{return JSON.parse(localStorage.getItem(seenK())||'[]')}catch(e){return[]}};
+const seenSet=a=>{try{localStorage.setItem(seenK(),JSON.stringify(a))}catch(e){}};
+async function parRes(){const g={};try{const q=await getDocs(query(collection(fs,'marks'),where('parentPhone','==',ME.phone),where('pub','==',true)));q.forEach(d=>{const x=d.data();if(x.date&&x.sid)g[x.sid+'|'+x.date]={sid:x.sid,date:x.date}})}catch(e){}return Object.values(g).sort((a,b)=>a.date<b.date?1:-1)}
+function setBadge(n){document.querySelectorAll('[onclick*="tab(\'alerts\')"]').forEach(b=>{b.querySelectorAll('.bdg').forEach(x=>x.remove());if(n>0)b.insertAdjacentHTML('beforeend',`<span class="bdg">${n}</span>`)})}
+const _pa15=parAlerts;
+parAlerts=async function(){
+ await _pa15();
+ [...$('v').querySelectorAll('.card')].forEach(c=>{const h=c.querySelector('h2');if(h&&h.textContent.includes('📝'))c.remove()});
+ const gr=await parRes(),seen=seenGet();
+ const html=gr.slice(0,12).map(x=>{const s=STU.find(z=>z.id===x.sid),nw=!seen.includes(x.sid+'|'+x.date);return `<div class="card" style="cursor:pointer;border-left:4px solid #2a5bd7" onclick="window.YX.pgOpen('${x.sid}','prog')"><b>📝 ${esc(s?s.name:'')}: ${T('test results received','தேர்வு முடிவுகள் வந்துள்ளன')}</b>${nw?` <span class="bdg">${T('new','புதிது')}</span>`:''}<br><span class="mut">${fmtD(x.date)} · ${T('Tap to see progress & attendance report','முன்னேற்றம் மற்றும் வருகை அறிக்கையைக் காண தொடவும்')} →</span></div>`}).join('');
+ const v=$('v');if(html){[...v.children].forEach(c=>{if(c.textContent.includes('No alerts right now')||c.textContent.includes('இப்போது அறிவிப்புகள் இல்லை'))c.remove()});v.insertAdjacentHTML('afterbegin',html)}
+ seenSet(gr.map(x=>x.sid+'|'+x.date));setBadge(0);
+};
+const _hm15=V.home;
+V.home=async()=>{
+ if(ME.role!=='parent')return _hm15();
+ await loadStu();
+ $('v').innerHTML=`<h1 class="pgt">${T('Your children','உங்கள் குழந்தைகள்')}</h1>`+(STU.filter(s=>s.active!==false).map(s=>`<div class="card srow2" onclick="window.YX.pgOpen('${s.id}','day')">${avt2(s,40)}<div style="flex:1"><b>${esc(s.name)}</b><div class="mut">${T('Class','வகுப்பு')} ${esc(s.cls)}${s.school?' · '+esc(s.school):''}</div></div><span style="font-size:22px;color:#8a94ab">›</span></div>`).join('')||`<div class="card mut">${T('No student is linked to your mobile number yet. Please contact the centre.','உங்கள் மொபைல் எண்ணுடன் மாணவர் இணைக்கப்படவில்லை. மையத்தைத் தொடர்புகொள்ளவும்.')}</div>`)+`<p class="mut">${T('View only. Notifications for your children come to this login only.','பார்வைக்கு மட்டும். உங்கள் குழந்தைகளுக்கான அறிவிப்புகள் இந்த உள்நுழைவுக்கே வரும்.')}</p>`;
+};
+let SRT=null;
+async function srchTch(){if(SRT)return SRT;SRT=[];if(ME.role==='owner'){try{const us=await getDocs(collection(fs,'users'));us.forEach(d=>{const x=d.data();if(x.role==='teacher'&&x.active!==false)SRT.push({uid:d.id,name:x.name||'',phone:x.phone||''})})}catch(e){}}return SRT}
+async function srchOpen(){
+ await loadStu();await srchTch();
+ const o=$('srch');if(o)o.remove();
+ document.body.insertAdjacentHTML('beforeend',`<div class="srch" id="srch" onclick="if(event.target===this)this.remove()"><div class="sbx"><input id="sq" placeholder="${T('Search student, parent, teacher, mobile…','மாணவர், பெற்றோர், ஆசிரியர், மொபைல் தேடு…')}" oninput="window.YX.srchGo()"><div id="sr" style="margin-top:8px"></div></div></div>`);
+ $('sq').focus();
+}
+function srchGo(){
+ const q=$('sq').value.trim().toLowerCase();if(!q){$('sr').innerHTML='';return}
+ const s=STU.filter(x=>x.active!==false&&[x.name,x.parentName,x.parentPhone,x.school,'class '+x.cls].some(f=>(f||'').toLowerCase().includes(q))).slice(0,15),t=(SRT||[]).filter(x=>[x.name,x.phone].some(f=>(f||'').toLowerCase().includes(q))).slice(0,8);
+ $('sr').innerHTML=s.map(x=>`<div class="card srow2" onclick="document.getElementById('srch').remove();window.YX.pgOpen('${x.id}','prog')">${avt2(x,36)}<div style="flex:1"><b>${esc(x.name)}</b><div class="mut">${T('Student','மாணவர்')} · ${T('Class','வகுப்பு')} ${esc(x.cls)}${x.school?' · '+esc(x.school):''}<br>${T('Parent','பெற்றோர்')}: ${esc(x.parentName||'—')} ${esc(x.parentPhone||'')}</div></div></div>`).join('')+t.map(x=>`<div class="card srow2" onclick="document.getElementById('srch').remove();window.YX.sheetOpen('${x.uid}')"><span class="av2" style="width:36px;height:36px;font-size:15px">${esc((x.name||'?').charAt(0).toUpperCase())}</span><div style="flex:1"><b>${esc(x.name)}</b><div class="mut">${T('Teacher','ஆசிரியர்')} · ${esc(x.phone)}</div></div></div>`).join('')||`<p class="mut">${T('No match.','பொருத்தம் இல்லை.')}</p>`;
+}
+let LNK=0;
+function linkNames(){
+ if(LNK)return;LNK=1;
+ requestAnimationFrame(()=>{LNK=0;try{
+  const v=$('v');if(!v||!ME||ME.role==='parent'||(TAB==='pgrid'&&PG.sid))return;
+  const mp={},dup=new Set();
+  STU.filter(s=>s.active!==false).forEach(s=>{const k=(s.name||'').trim();if(k.length<2)return;if(mp[k])dup.add(k);else mp[k]={k:'s',id:s.id}});
+  (SRT||[]).forEach(t=>{const k=(t.name||'').trim();if(k.length<2)return;if(mp[k])dup.add(k);else mp[k]={k:'t',id:t.uid}});
+  dup.forEach(k=>delete mp[k]);
+  const w=document.createTreeWalker(v,NodeFilter.SHOW_TEXT),nodes=[];let n;
+  while((n=w.nextNode())){const t=n.textContent.trim();if(mp[t]&&n.parentElement&&!n.parentElement.closest('button,a,select,textarea,label,option,input,[onclick],.nlk,.lnk,h1,th'))nodes.push([n,mp[t]])}
+  nodes.forEach(([n,m])=>{const sp=document.createElement('span');sp.className='nlk';sp.dataset.k=m.k;sp.dataset.id=m.id;sp.textContent=n.textContent;n.replaceWith(sp)});
+ }catch(e){}});
+}
+document.addEventListener('click',e=>{const n=e.target.closest&&e.target.closest('.nlk');if(!n)return;e.stopPropagation();e.preventDefault();if(n.dataset.k==='s')window.YX.pgOpen(n.dataset.id,'prog');else if(window.YX.sheetOpen)window.YX.sheetOpen(n.dataset.id)},true);
+new MutationObserver(()=>linkNames()).observe(document.body,{childList:true,subtree:true});
+const _vh15=viewHome;
+viewHome=async function(){
+ await _vh15();
+ const hd=document.querySelector('header');
+ if(hd&&ME&&(ME.role==='owner'||ME.role==='teacher')&&!hd.querySelector('.sbtn')){const b=document.createElement('button');b.className='sbtn';b.title=T('Search','தேடு');b.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';b.onclick=srchOpen;const t=hd.querySelector('.ttl');if(t)t.after(b)}
+ if(ME&&ME.role==='owner')srchTch().then(linkNames);
+ if(ME&&ME.role==='parent'&&TAB!=='alerts'){const gr=await parRes(),seen=seenGet();setBadge(gr.filter(x=>!seen.includes(x.sid+'|'+x.date)).length)}
+ linkNames();
+};
+async function geoGate(act){
+ await loadCen();
+ if(!CEN)throw {msg:T('The owner has not set the centre location yet, so '+act[0]+' is not possible. Please ask the owner to set it in Settings.','மையத்தின் இருப்பிடத்தை உரிமையாளர் இன்னும் அமைக்கவில்லை, அதனால் '+act[1]+' செய்ய முடியாது. அமைப்புகளில் அமைக்கச் சொல்லுங்கள்.')};
+ const p=await getPos(),d=Math.round(dist(CEN.lat,CEN.lng,p.latitude,p.longitude)),rad=CEN.radius||250;
+ if(d>rad)throw {msg:T('You are not at the centre (about '+d+' m away), so you cannot '+act[0]+' from here. Allowed within '+rad+' m.','நீங்கள் ஆஃபீஸில் இல்லை (சுமார் '+d+' மீ தொலைவு). அதனால் இங்கிருந்து '+act[1]+' செய்ய முடியாது. அனுமதி: '+rad+' மீ.')};
+ return {p,d};
+}
+const geoMsg=e=>e&&e.msg?e.msg:(e&&(typeof e.code==='number'||e.code==='nogeo')?geoErr(e):errText(e));
+saIn=async function(){
+ try{const uid=auth.currentUser.uid,{p,d}=await geoGate(['check in','வருகை பதிவு']);
+  await setDoc(doc(fs,'satt',today()+'_'+uid),{uid,name:ME.name,date:today(),in:nowHM(),out:null,lat:p.latitude,lng:p.longitude,dist:d});
+  await V[TAB]();m2(T('Check-in saved.','வருகை பதிவானது.'),true);
+ }catch(e){m2(geoMsg(e))}
+};
+saOut=async function(){
+ try{await geoGate(['check out','வெளியேறுதல் பதிவு']);const uid=auth.currentUser.uid,id=today()+'_'+uid,s=await getDoc(doc(fs,'satt',id));if(!s.exists())return;
+  await setDoc(doc(fs,'satt',id),{...s.data(),out:nowHM()});await V[TAB]();m2(T('Check-out saved.','வெளியேறுதல் பதிவானது.'),true);
+ }catch(e){m2(geoMsg(e))}
+};
+setTimeout(()=>Object.assign(window.YX,{saIn,saOut,srchGo,srchOpen,pgAddSub:()=>{const x=$('xs');if(x)x.insertAdjacentHTML('beforeend',`<div class="xr" style="display:flex;gap:8px;margin-top:6px"><input class="xn" placeholder="${T('Subject name','பாடத்தின் பெயர்')}" style="flex:1"><input class="xv" inputmode="decimal" style="width:90px"></div>`)}}),0);
 async function route(){
  const u=auth.currentUser;
  if(!u){TAB='home';CLS='';STU=[];ATT={};EXID='';return viewLogin()}
