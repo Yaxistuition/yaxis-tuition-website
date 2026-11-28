@@ -406,7 +406,7 @@ async function listUsers(){
   const s=await getDocs(collection(fs,'users'));const rows=[];
   s.forEach(d=>rows.push({id:d.id,...d.data()}));
   rows.sort((a,b)=>(a.role>b.role?1:-1)||(a.name||'').localeCompare(b.name||''));
-  $('ul').innerHTML=rows.map(u=>`<div class="row"><b>${esc(u.name||'')}<br><span class="mut">${esc(u.phone)} · ${u.role}</span></b><span class="tag ${u.active?'':'off'}">${u.active?T('Active','செயலில்'):T('Off','நிறுத்தம்')}</span>${u.role==='owner'?'':`<button class="btn sm gr" onclick="window.YX.toggle('${u.id}',${!u.active})">${u.active?T('Deactivate','நிறுத்து'):T('Activate','இயக்கு')}</button><button class="btn sm gr" onclick="window.YX.reset('${u.id}')">${T('New PIN','புதிய PIN')}</button>`}</div>`).join('')||'-';
+  $('ul').innerHTML=rows.map(u=>`<div class="row"><b>${esc(u.name||'')}<br><span class="mut">${esc(u.phone)} · ${u.role}</span></b><span class="tag ${u.active?'':'off'}">${u.active?T('Active','செயலில்'):T('Off','நிறுத்தம்')}</span>${u.role==='owner'?'':`<button class="btn sm gr" onclick="window.YX.toggle('${u.id}',${!u.active})">${u.active?T('Deactivate','நிறுத்து'):T('Activate','இயக்கு')}</button>${u.active?'':`<button class="btn sm gr" onclick="window.YX.usrDel('${u.id}')">🗑 ${T('Delete','நீக்கு')}</button>`}<button class="btn sm gr" onclick="window.YX.reset('${u.id}')">${T('New PIN','புதிய PIN')}</button>`}</div>`).join('')||'-';
   window.__users=rows;
  }catch(e){$('ul').textContent=errText(e)}
 }
@@ -1033,7 +1033,7 @@ function acForm(){
 }
 async function stList(){
  await loadStu();const b=$('sl');if(!b)return;
- b.innerHTML=STU.map(s=>`<div class="row"><b>${esc(s.name)}<br><span class="mut">${T('Class','வகுப்பு')} ${esc(s.cls)} · ${esc(s.parentName||'')} ${esc(s.parentPhone||'')}</span></b>${s.active===false?`<span class="tag off">${T('Off','நிறுத்தம்')}</span>`:''}<button class="btn sm gr" onclick="window.YX.stOff2('${s.id}',${s.active===false})">${s.active===false?T('Activate','இயக்கு'):T('Deactivate','நிறுத்து')}</button></div>`).join('')||`<p class="mut">-</p>`;
+ b.innerHTML=STU.map(s=>`<div class="row"><b>${esc(s.name)}<br><span class="mut">${T('Class','வகுப்பு')} ${esc(s.cls)} · ${esc(s.parentName||'')} ${esc(s.parentPhone||'')}</span></b>${s.active===false?`<span class="tag off">${T('Off','நிறுத்தம்')}</span>`:''}<button class="btn sm gr" onclick="window.YX.stOff2('${s.id}',${s.active===false})">${s.active===false?T('Activate','இயக்கு'):T('Deactivate','நிறுத்து')}</button>${s.active===false?`<button class="btn sm gr" onclick="window.YX.stDelA('${s.id}')">🗑 ${T('Delete','நீக்கு')}</button>`:''}</div>`).join('')||`<p class="mut">-</p>`;
 }
 async function idList(){
  const b=$('il');if(!b)return;
@@ -1387,15 +1387,15 @@ function tabTests(s){
  const l=PD.marks.slice().sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);let h=pgBox();
  h+=`<button class="btn" style="background:#1B8F1E" onclick="window.YX.pgTab('tests',true)">＋ ${T('Add test marks','தேர்வு மதிப்பெண் சேர்')}</button>`;
  if(PG.tf==='new'){
-  h+=`<div class="card"><b>${T('New test — subjects of class ','புதிய தேர்வு — வகுப்பு ')}${esc(s.cls)}</b><div class="two"><div><label>${T('Date','தேதி')}</label><input id="t_d" type="date" value="${today()}" max="${today()}"></div><div><label>${T('Out of','மொத்தம்')}</label><input id="t_x" inputmode="numeric" value="50"></div></div>
+  h+=`<div class="card"><b>${T('New test — subjects of class ','புதிய தேர்வு — வகுப்பு ')}${esc(s.cls)}</b><div class="two"><div><label>${T('Date','தேதி')}</label><input id="t_d" type="date" value="${today()}" max="${today()}"></div><div><label>${T('Out of','மொத்தம்')}</label><select id="t_x" onchange="window.YX.pgOut('t_x')">${outOpts(50)}</select></div></div>
   <p class="mut">${T('Enter marks only for subjects written (write A for absent). Empty ones are not counted.','எழுதிய பாடங்களுக்கு மட்டும் மதிப்பெண் உள்ளிடவும் (வரவில்லை எனில் A). காலியாக விட்டவை கணக்கில் சேராது.')}${ME.role==='owner'?' '+T('Marks entered by the owner are published to the parent immediately.','உரிமையாளர் உள்ளிடும் மதிப்பெண்கள் உடனே பெற்றோருக்கு வெளியிடப்படும்.'):' '+T('After saving, the owner will approve and publish.','சேமித்த பிறகு உரிமையாளர் ஒப்புதல் அளித்து வெளியிடுவார்.')}</p>
-  ${SUBJ(s.cls).map((z,i)=>`<div style="display:flex;align-items:center;gap:8px;margin-top:6px"><span style="flex:1">${esc(subN(z))}</span><input id="tm_${i}" inputmode="decimal" style="width:90px"></div>`).join('')}<div id="xs"></div><button class="btn sm gr" style="margin-top:8px" onclick="window.YX.pgAddSub()">＋ ${T('Add subject','பாடம் சேர்')}</button>
+  ${SUBJ(s.cls).map((z,i)=>`<div style="display:flex;align-items:center;gap:8px;margin-top:6px"><span style="flex:1">${esc(subN(z))}</span><select id="tm_${i}" class="mk" data-o="t_x" style="width:110px">${mkOpts(50,'')}</select></div>`).join('')}<div id="xs"></div><button class="btn sm gr" style="margin-top:8px" onclick="window.YX.pgAddSub()">＋ ${T('Add subject','பாடம் சேர்')}</button>
   <div id="m2"></div><div class="two" style="margin-top:10px"><button class="btn" onclick="window.YX.pgSaveTests()">${T('Save','சேமி')}</button><button class="btn gr" onclick="window.YX.pgTab('tests',false)">${T('Cancel','ரத்து')}</button></div></div>`;
  }
  h+=`<div class="card"><table class="xt"><tr><th>${T('Date','தேதி')}</th><th>${T('Subject','பாடம்')}</th><th>${T('Marks','மதிப்பெண்')}</th><th></th></tr>`;
  l.forEach(x=>{
-  if(PG.tf===x.id){h+=`<tr><td colspan="4"><div style="background:#f3f6fc;border-radius:10px;padding:8px"><b>${fmtD(x.date)} · ${esc(subN(x.subject))}</b><div class="two"><div><label>${T('Marks (A = absent)','மதிப்பெண் (A = வரவில்லை)')}</label><input id="e_m" value="${x.ab?'A':esc(x.m)}"></div><div><label>${T('Out of','மொத்தம்')}</label><input id="e_x" value="${esc(x.max)}"></div></div><div id="m2"></div><div class="two"><button class="btn" onclick="window.YX.pgSaveEdit('${x.id}')">${T('Save','சேமி')}</button><button class="btn gr" onclick="window.YX.pgTab('tests',false)">${T('Cancel','ரத்து')}</button></div></div></td></tr>`;return}
-  const can=ME.role==='owner'||!x.pub;
+  if(PG.tf===x.id){h+=`<tr><td colspan="4"><div style="background:#f3f6fc;border-radius:10px;padding:8px"><b>${fmtD(x.date)} · ${esc(subN(x.subject))}</b><div class="two"><div><label>${T('Marks (A = absent)','மதிப்பெண் (A = வரவில்லை)')}</label><select id="e_m" class="mk" data-o="e_x">${mkOpts(Number(x.max),x.ab?'A':x.m)}</select></div><div><label>${T('Out of','மொத்தம்')}</label><select id="e_x" onchange="window.YX.pgOut('e_x')">${outOpts(Number(x.max))}</select></div></div><div id="m2"></div><div class="two"><button class="btn" onclick="window.YX.pgSaveEdit('${x.id}')">${T('Save','சேமி')}</button><button class="btn gr" onclick="window.YX.pgTab('tests',false)">${T('Cancel','ரத்து')}</button></div></div></td></tr>`;return}
+  const can=ME.role==='owner'||(!x.pub&&x.date>=pAddD(today(),-3));
   h+=`<tr><td>${fmtD(x.date)}</td><td>${esc(subN(x.subject))}</td><td>${x.ab?T('Absent','வரவில்லை'):x.m+'/'+x.max+' ('+rnd(pcn(x))+'%)'}<br><span class="tag ${x.pub?'ok':''}">${x.pub?T('Published','வெளியிடப்பட்டது'):T('Waiting for owner','உரிமையாளர் ஒப்புதல்')}</span></td><td style="white-space:nowrap">${can?`<button class="btn sm gr" onclick="window.YX.pgEdit('${x.id}')">✎</button>`:`<span class="mut">🔒</span>`}${ME.role==='owner'?` <button class="btn sm gr" onclick="window.YX.pgDel('${x.id}')">🗑</button>`:''}</td></tr>`});
  if(!l.length)h+=`<tr><td colspan="4" class="mut">${T('No tests yet.','தேர்வுகள் இல்லை.')}</td></tr>`;
  return h+'</table></div>';
@@ -1444,6 +1444,7 @@ async function pgSaveTests(){
  }catch(e){m2(String(e&&e.code||'').includes('permission')?T('These marks are already published. Only the owner can change them.','இந்த மதிப்பெண்கள் ஏற்கெனவே வெளியிடப்பட்டவை. உரிமையாளர் மட்டுமே மாற்ற முடியும்.'):errText(e))}
 }
 async function pgSaveEdit(id){
+ const mk0=PD.marks.find(z=>z.id===id);if(ME.role==='teacher'&&mk0&&mk0.date<pAddD(today(),-3))return m2(T('This mark is older than 3 days — locked. Ask the owner.','இந்த மதிப்பெண் 3 நாட்களுக்கு மேல் பழையது — பூட்டப்பட்டது. உரிமையாளரிடம் கேட்கவும்.'));
  const v=$('e_m').value.trim(),mx=Number($('e_x').value),ab=/^a$/i.test(v),n=Number(v);
  if(!(mx>0)||(!ab&&(v===''||!(n>=0&&n<=mx))))return m2(T('Enter valid marks.','சரியான மதிப்பெண்களை உள்ளிடவும்.'));
  try{await updateDoc(doc(fs,'marks',id),{m:ab?null:n,max:mx,ab});PG.tf=null;PG.msg=T('Saved.','சேமிக்கப்பட்டது.');await V.pgrid()}catch(e){m2(errText(e))}
@@ -1602,6 +1603,94 @@ saOut=async function(){
  }catch(e){m2(geoMsg(e))}
 };
 setTimeout(()=>Object.assign(window.YX,{saIn,saOut,srchGo,srchOpen,pgAddSub:()=>{const x=$('xs');if(x)x.insertAdjacentHTML('beforeend',`<div class="xr" style="display:flex;gap:8px;margin-top:6px"><input class="xn" placeholder="${T('Subject name','பாடத்தின் பெயர்')}" style="flex:1"><input class="xv" inputmode="decimal" style="width:90px"></div>`)}}),0);
+/* ---- stage 16: dropdown marks, my attendance, accounts delete, app icon, movable badge ---- */
+const OUTS=[5,10,15,20,25,30,40,50,60,70,75,80,90,100];
+const outOpts=c=>{const a=OUTS.includes(c)||!(c>0)?OUTS:OUTS.concat([c]).sort((x,y)=>x-y);return a.map(n=>`<option value="${n}"${n===c?' selected':''}>${n}</option>`).join('')};
+const mkOpts=(mx,cur)=>{let h=`<option value="">–</option><option value="A"${cur==='A'?' selected':''}>A (${T('Absent','வரவில்லை')})</option>`;const c=cur===''||cur==='A'||cur==null?null:Number(cur);if(c!=null&&!Number.isInteger(c)&&c<=mx)h+=`<option value="${c}" selected>${c}</option>`;for(let i=0;i<=mx;i++)h+=`<option value="${i}"${c===i?' selected':''}>${i}</option>`;return h};
+const _nv16=navItems;
+navItems=function(){return _nv16().filter(x=>x[0]!=='ex')};
+const hm12=s=>{if(!s)return '–';const [h,m]=s.split(':').map(Number);return ((h%12)||12)+':'+String(m).padStart(2,'0')+' '+(h>=12?'PM':'AM')};
+const hmMin=s=>{const [h,m]=s.split(':').map(Number);return h*60+m};
+const hrsT=(a,b)=>{if(!a||!b)return '–';const d=hmMin(b)-hmMin(a);return d<0?'–':Math.floor(d/60)+'h '+String(d%60).padStart(2,'0')+'m'};
+const canEditAtt=r=>Date.now()-new Date(r.date+'T'+(r.in||'00:00')+':00+05:30').getTime()<=864e5;
+let SAE='';
+const _sa16=V.sa;
+V.sa=async()=>{
+ if(ME.role==='owner')return _sa16();
+ await loadCen();await loadHol();const uid=auth.currentUser.uid,hol=HOL.find(x=>x.date===today());
+ const q=await getDocs(query(collection(fs,'satt'),where('uid','==',uid)));const rec=[];q.forEach(d=>rec.push(d.data()));rec.sort((a,b)=>a.date<b.date?1:-1);
+ const me=rec.find(x=>x.date===today()),rad=CEN&&CEN.radius?CEN.radius:250;
+ const st=!me?`<span class="tag">${T('Not marked','குறிக்கவில்லை')}</span>`:`<span class="tag ok">${T('In','வருகை')} ${hm12(me.in)}${me.out?' → '+T('Out','புறப்பாடு')+' '+hm12(me.out):''}</span>`;
+ let h=hol?`<div class="card" style="border:2px solid var(--acc)"><b>${T('Holiday today','இன்று விடுமுறை')}: ${esc(hol.name)}</b></div>`:'';
+ h+=`<div class="card"><b style="font-size:18px">${T('Today','இன்று')} · ${esc(wdD(today()))}</b><p style="margin:8px 0">${st}</p><div class="two"><button class="btn" ${me?'disabled':''} onclick="window.YX.saIn()">📍 ${T('Check-in','வருகை')}</button><button class="btn gr" ${!me||me.out?'disabled':''} onclick="window.YX.saOut()">⏏ ${T('Check-out','புறப்பாடு')}</button></div><div id="m2"></div><p class="mut" style="margin:8px 0 0">📍 ${T('Check-in/out works only within '+rad+' m of the tuition centre.','வருகை/புறப்பாடு டியூஷன் மையத்திலிருந்து '+rad+' மீட்டருக்குள் மட்டுமே பதிவாகும்.')}</p></div>
+ <div class="card" style="overflow-x:auto"><b style="font-size:17px">${T('My sheet','என் பதிவேடு')}</b><p class="mut" style="margin:2px 0 6px">${T('You can change a record only within 24 hours.','ஒரு பதிவை 24 மணி நேரத்திற்குள் மட்டுமே மாற்ற முடியும்.')}</p><table class="xt"><tr><th>${T('Date','தேதி')}</th><th>${T('In','வருகை')}</th><th>${T('Out','புறப்பாடு')}</th><th>${T('Hours','மணி')}</th><th></th></tr>`;
+ rec.slice(0,31).forEach(r=>{
+  const ed=canEditAtt(r);
+  if(SAE===r.date&&ed)h+=`<tr><td colspan="5"><div style="background:#f3f6fc;border-radius:10px;padding:8px"><b>${esc(wdD(r.date))}</b><div class="two"><div><label>${T('In','வருகை')}</label><input id="sa_i" type="time" value="${esc(r.in||'')}"></div><div><label>${T('Out','புறப்பாடு')}</label><input id="sa_o" type="time" value="${esc(r.out||'')}"></div></div><div id="m3"></div><div class="two"><button class="btn" onclick="window.YX.saEditSave('${r.date}')">${T('Save','சேமி')}</button><button class="btn gr" onclick="window.YX.saEdit('')">${T('Cancel','ரத்து')}</button></div></div></td></tr>`;
+  else h+=`<tr><td>${esc(wdD(r.date))}</td><td>${hm12(r.in)}</td><td>${hm12(r.out)}</td><td>${hrsT(r.in,r.out)}</td><td>${ed?`<button class="btn sm gr" onclick="window.YX.saEdit('${r.date}')">✎</button>`:'<span class="mut">🔒</span>'}</td></tr>`});
+ if(!rec.length)h+=`<tr><td colspan="5" class="mut">${T('No records yet.','பதிவுகள் இல்லை.')}</td></tr>`;
+ $('v').innerHTML=h+'</table></div>';
+};
+async function saEditSave(d){
+ const uid=auth.currentUser.uid,i=$('sa_i').value,o=$('sa_o').value,m3=x=>{$('m3').innerHTML=`<div class="msg err">${esc(x)}</div>`};
+ if(!i)return m3(T('Enter the in-time.','வருகை நேரத்தை உள்ளிடவும்.'));
+ if(o&&hmMin(o)<hmMin(i))return m3(T('Out-time must be after in-time.','புறப்பாடு நேரம் வருகைக்குப் பின் இருக்க வேண்டும்.'));
+ try{
+  const s=await getDoc(doc(fs,'satt',d+'_'+uid));const r=s.exists()?s.data():null;
+  if(!r||!canEditAtt(r))return m3(T('This record is older than 24 hours and is locked.','இந்தப் பதிவு 24 மணி நேரத்திற்கு மேல் பழையது — பூட்டப்பட்டது.'));
+  await setDoc(doc(fs,'satt',d+'_'+uid),{uid,name:ME.name,date:d,in:i,out:o||null,lat:r.lat==null?null:r.lat,lng:r.lng==null?null:r.lng,dist:r.dist==null?null:r.dist,edited:true});
+  SAE='';await V.sa();
+ }catch(e){m3(errText(e))}
+}
+async function usrDel(id){
+ const u=(window.__users||[]).find(x=>x.id===id);if(!u||u.active||u.role==='owner')return;
+ if(!confirm(T('Delete '+u.name+' permanently? This cannot be undone.',u.name+' கணக்கை நிரந்தரமாக நீக்கவா? மீட்க முடியாது.')))return;
+ try{await deleteDoc(doc(fs,'users',id));listUsers()}catch(e){alert(errText(e))}
+}
+async function stDelA(id){
+ const s=STU.find(x=>x.id===id);if(!s||s.active!==false)return;
+ if(!confirm(T('Delete student '+s.name+' and all their attendance, marks and remarks permanently? This cannot be undone.',s.name+' மாணவரையும் அவரது வருகை, மதிப்பெண், ரிமார்க் அனைத்தையும் நிரந்தரமாக நீக்கவா? மீட்க முடியாது.')))return;
+ try{for(const c of ['att','marks','remarks']){const q=await getDocs(query(collection(fs,c),where('sid','==',id)));for(const d of q.docs)await deleteDoc(d.ref)}await deleteDoc(doc(fs,'students',id));await stList()}catch(e){alert(errText(e))}
+}
+const AVTCO=[35.5,96,369,329];
+function scaledIcon(d,n){return new Promise(res=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=c.height=n;c.getContext('2d').drawImage(im,0,0,n,n);res(c.toDataURL('image/png'))};im.onerror=()=>res(d);im.src=d})}
+async function pwaSetup(){
+ try{
+  let d=null;try{d=localStorage.getItem('yxicon5')}catch(e){}
+  if(!d){
+   const im=new Image();im.src='/assets/images/logo.png';await im.decode();const k=im.naturalWidth/900,[sx,sy,sw,sh]=AVTCO;
+   const c=document.createElement('canvas');c.width=c.height=512;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,512,512);
+   const sc=Math.min(410/sw,410/sh),dw=sw*sc,dh=sh*sc,ox=(512-dw)/2,oy=(512-dh)/2;
+   x.drawImage(im,sx*k,sy*k,sw*k,sh*k,ox,oy,dw,dh);x.fillStyle='#fff';x.fillRect(ox+(362-sx)*sc,oy,dw,(372-sy)*sc);
+   d=c.toDataURL('image/png');try{localStorage.setItem('yxicon5',d)}catch(e){}
+  }
+  const s192=await scaledIcon(d,192),s180=await scaledIcon(d,180);
+  document.querySelectorAll('link[rel~="icon"],link[rel="apple-touch-icon"],link[rel="manifest"]').forEach(e=>e.remove());
+  const add=(rel,a)=>{const l=document.createElement('link');l.rel=rel;for(const k in a)l.setAttribute(k,a[k]);document.head.appendChild(l)};
+  add('icon',{type:'image/png',href:s192});add('apple-touch-icon',{sizes:'180x180',href:s180});
+  const m={name:'Y Axis Tuition',short_name:'Y Axis',start_url:location.origin+'/app/',scope:location.origin+'/app/',display:'standalone',background_color:'#ffffff',theme_color:'#12306B',icons:[{src:s192,sizes:'192x192',type:'image/png',purpose:'any'},{src:d,sizes:'512x512',type:'image/png',purpose:'any'},{src:d,sizes:'512x512',type:'image/png',purpose:'maskable'}]};
+  add('manifest',{href:URL.createObjectURL(new Blob([JSON.stringify(m)],{type:'application/manifest+json'}))});
+  [['apple-mobile-web-app-capable','yes'],['mobile-web-app-capable','yes'],['apple-mobile-web-app-title','Y Axis']].forEach(([n,v])=>{if(!document.querySelector('meta[name="'+n+'"]')){const e=document.createElement('meta');e.name=n;e.content=v;document.head.appendChild(e)}});
+ }catch(e){window.__pwaErr=String(e)}
+}
+function badgeDrag(){
+ const f=document.getElementById('nl-badge-frame');if(!f||f.dataset.dg)return;f.dataset.dg='1';
+ const h=document.createElement('div');h.id='nlh';h.title=T('Drag to move','இழுத்து நகர்த்தவும்');h.textContent='⠿';
+ Object.assign(h.style,{position:'fixed',zIndex:'2147483647',width:'34px',height:'34px',borderRadius:'50%',background:'#12306B',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px',touchAction:'none',cursor:'grab',boxShadow:'0 2px 8px rgba(0,0,0,.35)'});
+ document.body.appendChild(h);
+ const place=()=>{const r=f.getBoundingClientRect();h.style.top=Math.max(0,r.top+(r.height-34)/2)+'px';h.style.left=(r.left>40?r.left-38:r.right+4)+'px'};
+ const pos=(x,y)=>{const w=f.offsetWidth||170,hh=f.offsetHeight||40;x=Math.max(0,Math.min(innerWidth-w,x));y=Math.max(0,Math.min(innerHeight-hh,y));f.style.setProperty('left',x+'px','important');f.style.setProperty('top',y+'px','important');f.style.setProperty('right','auto','important');f.style.setProperty('bottom','auto','important');place();return [x,y]};
+ try{const p=JSON.parse(localStorage.getItem('yxnl')||'null');if(p)pos(p[0],p[1])}catch(e){}
+ let sx=0,sy=0,bx=0,by=0,on=false;
+ h.addEventListener('pointerdown',e=>{on=true;h.setPointerCapture(e.pointerId);const r=f.getBoundingClientRect();bx=r.left;by=r.top;sx=e.clientX;sy=e.clientY;h.style.cursor='grabbing';e.preventDefault()});
+ h.addEventListener('pointermove',e=>{if(on)pos(bx+e.clientX-sx,by+e.clientY-sy)});
+ const end=e=>{if(!on)return;on=false;h.style.cursor='grab';const r=f.getBoundingClientRect();try{localStorage.setItem('yxnl',JSON.stringify([r.left,r.top]))}catch(x){}};
+ h.addEventListener('pointerup',end);h.addEventListener('pointercancel',end);
+ setInterval(place,1500);addEventListener('resize',()=>{const r=f.getBoundingClientRect();pos(r.left,r.top)});place();
+}
+{let n=0;const t=setInterval(()=>{badgeDrag();if(document.getElementById('nlh')||++n>40)clearInterval(t)},1000)}
+setTimeout(pwaSetup,400);
+setTimeout(()=>Object.assign(window.YX,{usrDel,stDelA,saEditSave,saEdit:d=>{SAE=d;V.sa()},pgOut:id=>{const mx=Number($(id).value);document.querySelectorAll('select.mk[data-o="'+id+'"]').forEach(s=>{const cur=s.value;s.innerHTML=mkOpts(mx,cur)})},pgAddSub:()=>{const x=$('xs');if(x)x.insertAdjacentHTML('beforeend',`<div class="xr" style="display:flex;gap:8px;margin-top:6px"><input class="xn" placeholder="${T('Subject name','பாடத்தின் பெயர்')}" style="flex:1"><select class="xv mk" data-o="t_x" style="width:110px">${mkOpts(Number($('t_x').value),'')}</select></div>`)}}),0);
 async function route(){
  const u=auth.currentUser;
  if(!u){TAB='home';CLS='';STU=[];ATT={};EXID='';return viewLogin()}
